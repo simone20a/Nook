@@ -144,13 +144,6 @@ there is raw.
 `F1` or `ctrl+/` opens and closes the help popup on any screen; `?` also works
 from the list (where you are not typing text). Any other key closes the popup.
 
-## Notes on keys
-
-Some combinations cannot be expressed by a terminal: `ctrl+shift+letter` arrives
-as the same letter with `ctrl`, and `ctrl+?` arrives as `backspace`. `alt+…` keys
-require a terminal that sends them (on macOS you need "Use Option as Meta key" in
-Terminal.app or "Option key: Esc+" in iTerm2); where they don't arrive, the `ctrl`
-equivalents apply (`ctrl+←`/`ctrl+→`).
 
 ## Key diagnostics
 
@@ -173,17 +166,6 @@ written and the file is not created.
 ```sh
 NOOK_DEBUG_KEYS=1 ./nook
 ```
-
-## Prototype limitations
-
-Markdown is rendered line by line: fenced code blocks and tables appear as plain
-text, and paragraphs are not reflowed. Rendered lines are truncated to one screen
-row, not wrapped. No programming-language syntax highlighting, text search, or
-undo.
-
-## The logo
-
-Nook's logo follows the style of [Orcrist](https://github.com/simone20a/Orcrist)'s: the first letter, the **N**, is a stack of six layers, one per palette colour, each set back from the one in front along a single direction (up and to the left, at 200°); the other letters are the violet of the front layer, `#52389c`. The letters are vector outlines, not text, so the logo looks identical everywhere. `brand/build.py` regenerates the SVGs and `brand/render.py` the PNG.
 
 ## How it was built
 

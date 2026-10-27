@@ -52,6 +52,10 @@ type Model struct {
 	helpOpen bool
 	width    int
 	height   int
+
+	// helpTab and helpScroll are the active page and its scroll offset.
+	helpTab    int
+	helpScroll int
 }
 
 // New creates the root model with the list of notes already loaded.
@@ -96,16 +100,14 @@ func (m Model) updateKey(keyMsg tea.KeyMsg) (Model, tea.Cmd, bool) {
 
 	key := keyMsg.String()
 
-	// Help is a popup over the current screen: ctrl+_ / f1 open and close it,
-	// and any other key closes it without reaching the screen.
-	if m.helpOpen {
-		m.helpOpen = false
-		return m, nil, false
+	// Help is a popup over the current screen: while open it takes all the
+	// keys (pages, scrolling, closing), except ctrl+c which still quits.
+	if m.helpOpen && key != "ctrl+c" {
+		return m.updateHelpKey(key), nil, false
 	}
 
 	if isHelpKey(key) {
-		m.helpOpen = true
-		return m, nil, false
+		return m.openHelp(), nil, false
 	}
 
 	// Only ctrl+c quits immediately: ctrl+q reaches the active screen, where
@@ -118,8 +120,7 @@ func (m Model) updateKey(keyMsg tea.KeyMsg) (Model, tea.Cmd, bool) {
 	// field: in modeNormal ? is a command key, in the other modes
 	// it is text and must reach the list.
 	if m.screen == screenList && m.list.mode == modeNormal && key == "?" {
-		m.helpOpen = true
-		return m, nil, false
+		return m.openHelp(), nil, false
 	}
 
 	if m.screen == screenList {
@@ -205,30 +206,6 @@ func (m Model) windowTitle() string {
 // titleCmd returns the command that sets the window title.
 func (m Model) titleCmd() tea.Cmd { return tea.SetWindowTitle(m.windowTitle()) }
 
-// helpText is the short help text: the main system, formatting and
-// text shortcuts, the mouse and the list commands.
-const helpText = "System: F2 save · F3 format · F1 help · ctrl+c quit immediately\n" +
-	"Formatting: F3 opens the palette (arrows+enter) · ctrl+t then b i s k u x l q h 0 · markdown can be typed directly\n" +
-	"Text: ctrl+left/right or alt+left/right by word · alt+backspace deletes word · ctrl+u/k to start/end of line\n" +
-	"Selection: shift+arrows, shift+home/end, shift+ctrl+left/right · with the mouse drag holding the left button\n" +
-	"Mouse: click positions · double/triple click selects word/line · in the list click selects, double click opens\n" +
-	"List: n note · c folder · enter opens · → enters · ← goes up · r rename · d trash · u restore · o trash view · x delete · f filter · q quit"
-
-// renderHelp builds the content of the help popup: the text of the
-// shortcuts, rendered line by line inside the popup space and then centred by
-// centerPopup over the current screen.
-func renderHelp(w, h int) string {
-	lines := strings.Split(helpText, "\n")
-	if limit := maxPopupH(h); len(lines) > limit {
-		lines = lines[:limit]
-	}
-	limitW := maxPopupW(w)
-	for i, l := range lines {
-		lines[i] = truncatePlain(l, limitW)
-	}
-	return strings.Join(lines, "\n")
-}
-
 // View renders the active screen; with help open the screen stays
 // visible and the centred help popup is overlaid on top of it.
 func (m Model) View() string {
@@ -246,7 +223,7 @@ func (m Model) View() string {
 		return base
 	}
 	content := contentOnly(base, m.width, m.height)
-	content = centerPopup(content, m.width, m.height, renderHelp(m.width, m.height))
+	content = centerPopup(content, m.width, m.height, renderHelp(m.width, m.height, m.helpTab, m.helpScroll))
 	return withMargins(content, m.width, m.height)
 }
 
