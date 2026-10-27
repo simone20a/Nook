@@ -287,7 +287,7 @@ func (s editorScreen) edHitCol(line, cell int) int {
 }
 
 // edWheelStep is how many lines the document moves for each wheel event.
-const edWheelStep = 2
+const edWheelStep = 1
 
 // edUpdateMouse handles the editor's mouse: only in edEditing and only for the
 // press of the left button. A click maps the cell to (raw line,

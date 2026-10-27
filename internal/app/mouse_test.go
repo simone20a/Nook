@@ -114,17 +114,21 @@ func TestDoubleClickSelectsWord(t *testing.T) {
 // the Focus Line (the cursor line changes) and stops at the document edges.
 func TestMouseWheelScrollsDocument(t *testing.T) {
 	s := newDragTestScreen(t)
-
-	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionPress, Button: tea.MouseButtonWheelDown, X: 6, Y: 5})
-	if got := s.ed.CursorRow(); got != 3 {
-		t.Fatalf("CursorRow after wheel down = %d, want 3", got)
+	wheel := func(b tea.MouseButton) {
+		s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionPress, Button: b, X: 6, Y: 5})
 	}
-	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionPress, Button: tea.MouseButtonWheelDown, X: 6, Y: 5})
+
+	wheel(tea.MouseButtonWheelDown)
+	if got := s.ed.CursorRow(); got != 2 {
+		t.Fatalf("CursorRow after wheel down = %d, want 2", got)
+	}
+	wheel(tea.MouseButtonWheelDown)
+	wheel(tea.MouseButtonWheelDown)
 	if got := s.ed.CursorRow(); got != 3 {
 		t.Fatalf("CursorRow at the end = %d, want 3", got)
 	}
-	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionPress, Button: tea.MouseButtonWheelUp, X: 6, Y: 5})
-	if got := s.ed.CursorRow(); got != 1 {
-		t.Fatalf("CursorRow after wheel up = %d, want 1", got)
+	wheel(tea.MouseButtonWheelUp)
+	if got := s.ed.CursorRow(); got != 2 {
+		t.Fatalf("CursorRow after wheel up = %d, want 2", got)
 	}
 }
