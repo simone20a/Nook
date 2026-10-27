@@ -120,8 +120,9 @@ var helpPages = []helpPage{
 		hk("ctrl+c", "quit immediately"),
 		hk("q / ctrl+q", "quit from the list"),
 		hh("Data"),
-		hk("~/.nook/notes.db", "where notes are stored"),
-		hk("NOOK_DB", "environment variable to change it"),
+		hk("~/.nook", "notes are .md files, folders are folders"),
+		hk(".nook/.trash", "where deleted notes wait"),
+		hk("NOOK_DIR", "environment variable to change the folder"),
 	}},
 }
 

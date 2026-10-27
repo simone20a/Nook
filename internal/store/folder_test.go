@@ -2,14 +2,13 @@ package store
 
 import (
 	"errors"
-	"path/filepath"
 	"testing"
 )
 
 // newFolderTestStore opens a store in a temporary directory of the test.
 func newFolderTestStore(t *testing.T) *Store {
 	t.Helper()
-	st, err := Open(filepath.Join(t.TempDir(), "notes.db"))
+	st, err := Open(t.TempDir())
 	if err != nil {
 		t.Fatalf("opening store: %v", err)
 	}
@@ -222,52 +221,5 @@ func TestRenameFolder(t *testing.T) {
 	}
 	if f.Name != "c" {
 		t.Errorf("name after renaming = %q, want \"c\"", f.Name)
-	}
-}
-
-// TestMigrateFromVersion1 checks that a database created by the previous
-// version (without folders) is upgraded without losing notes.
-func TestMigrateFromVersion1(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "old.db")
-
-	// v1 database: only the notes table, with one note in it.
-	old, err := openRaw(path)
-	if err != nil {
-		t.Fatalf("opening old database: %v", err)
-	}
-	if _, err := old.Exec(createTableSQL); err != nil {
-		t.Fatalf("creating notes table: %v", err)
-	}
-	if _, err := old.Exec(
-		"INSERT INTO notes (title, body, created_at, updated_at) VALUES ('ancient', 'hello', ?, ?)",
-		"2024-01-01T00:00:00Z", "2024-01-01T00:00:00Z",
-	); err != nil {
-		t.Fatalf("inserting note: %v", err)
-	}
-	if _, err := old.Exec("PRAGMA user_version = 1"); err != nil {
-		t.Fatalf("schema version: %v", err)
-	}
-	old.Close()
-
-	st, err := Open(path)
-	if err != nil {
-		t.Fatalf("opening migrated store: %v", err)
-	}
-	t.Cleanup(func() { st.Close() })
-
-	notes, err := st.List(false)
-	if err != nil {
-		t.Fatalf("listing notes: %v", err)
-	}
-	if len(notes) != 1 || notes[0].Title != "ancient" {
-		t.Fatalf("notes after migration = %+v, want the note \"ancient\"", notes)
-	}
-	if notes[0].FolderID != nil {
-		t.Errorf("FolderID of the migrated note = %v, want nil", notes[0].FolderID)
-	}
-
-	// And folders now work.
-	if _, err := st.CreateFolder("new", nil); err != nil {
-		t.Fatalf("creating folder after migration: %v", err)
 	}
 }

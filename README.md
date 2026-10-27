@@ -2,7 +2,7 @@
   <img src="brand/nook-logo.png" alt="Nook" width="350">
 </p>
 
-**Nook** is a terminal markdown note editor written in Go with [Bubble Tea](https://github.com/charmbracelet/bubbletea). Notes live in a small local SQLite database, are organised in folders, and are written with a **Focus Line**: the line you are typing always stays in the middle of the screen as raw markdown, while the rest of the document scrolls around it already rendered (headings, bold, links, quotes, lists and checkboxes without their markers).
+**Nook** is a terminal markdown note editor written in Go with [Bubble Tea](https://github.com/charmbracelet/bubbletea). Notes are plain `.md` files in `~/.nook`, organised in real folders, and are written with a **Focus Line**: the line you are typing always stays in the middle of the screen as raw markdown, while the rest of the document scrolls around it already rendered (headings, bold, links, quotes, lists and checkboxes without their markers).
 
 <p align="center">
   <img src="brand/nook-demo.gif" alt="Nook in action: note list and Focus Line editor" width="720">
@@ -14,7 +14,7 @@
 - **Real markdown, nicely seen.** Only the focused line shows raw text; the others are rendered with coloured styles and a fixed, muted palette.
 - **A menu for your notes.** A list centred on the selected entry, nested folders, a trash with restore, title filter, rename and on-the-fly creation.
 - **Keyboard and mouse.** Every action has a shortcut; click, double click, triple click, drag and wheel/touchpad scrolling work as you would expect.
-- **Nothing fragile.** Notes are stored in SQLite and deletion is soft: a trashed note can be recovered until you delete it forever.
+- **Nothing hidden.** Notes are ordinary markdown files and folders in `~/.nook`: read them, back them up or sync them with any tool. Deletion is soft: a trashed note can be recovered until you delete it forever.
 
 ## Installation
 
@@ -35,8 +35,15 @@ With the `Makefile`: `make build`, `make run`, `make test`, `make vet`, `make fm
 ```
 
 On start-up the note list opens; from there you create, open, rename and trash
-notes. Storage is SQLite at `~/.nook/notes.db` (override with `NOOK_DB`),
-with soft deletion: trashed notes remain recoverable from the trash.
+notes. Everything lives in `~/.nook` (override with `NOOK_DIR`): every note is a
+`<title>.md` file and every folder is a real directory, so you can edit them with
+any other editor too. Deleted notes are not erased but moved to the hidden
+`~/.nook/.trash` folder, from where they can be restored. Only `.md` files and
+folders are shown, any other file in the folder is left alone.
+
+If you used an earlier version that kept notes in a SQLite database
+(`notes.db`), the first start imports it into files and renames it to
+`notes.db.imported`.
 
 The interface has margins of 2 columns and 1 row on every side (reset below 30
 columns or 10 rows) and a footer with the main keys; each screen has its own help
@@ -47,8 +54,8 @@ popup with the full key map.
 Entries sit in a card at most 60 columns wide, centred horizontally and vertically
 on the selected entry. Each entry takes two lines: the name and, below it, a
 detail (`date · N words` for notes, `N notes` or `empty` for folders). Each entry
-is separated from the next by a `─` line. The title at the top is `NOTES`, with
-the folder path when you go down (`NOTES › projects`), or `TRASH` in the trash view.
+is separated from the next by a `─` line. The title at the top is `NOOK`, with
+the folder path when you go down (`NOOK › projects`), or `TRASH` in the trash view.
 
 ### Folders
 

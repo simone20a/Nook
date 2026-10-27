@@ -205,7 +205,7 @@ func TestDeleteFolderTrashesContent(t *testing.T) {
 	}
 }
 
-// TestListTitleBreadcrumb checks the list title: NOTES at the root and the
+// TestListTitleBreadcrumb checks the list title: NOOK at the root and the
 // path when descending into a folder.
 func TestListTitleBreadcrumb(t *testing.T) {
 	st := newFolderTestStore(t)
@@ -221,17 +221,17 @@ func TestListTitleBreadcrumb(t *testing.T) {
 	s := newListScreen(st, 80, 24)
 	s.load()
 
-	if got := strings.TrimSpace(s.listTitle(60)); got != "NOTES" {
-		t.Errorf("title at the root = %q, want \"NOTES\"", got)
+	if got := strings.TrimSpace(s.listTitle(60)); got != "NOOK" {
+		t.Errorf("title at the root = %q, want \"NOOK\"", got)
 	}
 
 	s = s.enterFolder(root.ID)
-	if got := strings.TrimSpace(s.listTitle(60)); got != "NOTES › projects" {
-		t.Errorf("title inside the folder = %q, want \"NOTES › projects\"", got)
+	if got := strings.TrimSpace(s.listTitle(60)); got != "NOOK › projects" {
+		t.Errorf("title inside the folder = %q, want \"NOOK › projects\"", got)
 	}
 
 	s = s.enterFolder(child.ID)
-	if got := strings.TrimSpace(s.listTitle(60)); got != "NOTES › projects › 2026" {
+	if got := strings.TrimSpace(s.listTitle(60)); got != "NOOK › projects › 2026" {
 		t.Errorf("title in the subfolder = %q, want the full path", got)
 	}
 

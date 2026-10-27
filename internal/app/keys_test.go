@@ -1,7 +1,6 @@
 package app
 
 import (
-	"path/filepath"
 	"testing"
 	"time"
 
@@ -16,7 +15,7 @@ import (
 func newKeysTestStore(t *testing.T) *store.Store {
 	t.Helper()
 
-	st, err := store.Open(filepath.Join(t.TempDir(), "notes.db"))
+	st, err := store.Open(t.TempDir())
 	if err != nil {
 		t.Fatalf("opening store: %v", err)
 	}

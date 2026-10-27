@@ -734,11 +734,11 @@ func listContentH(ch, titleH int) int {
 	return h
 }
 
-// listTitle is the title row of the list: "NOTES" with the path of the
+// listTitle is the title row of the list: "NOOK" with the path of the
 // folders descended into, or "TRASH" in the trash view. It is
 // centred over cw columns and rendered with theme.BannerAcc.
 func (s listScreen) listTitle(cw int) string {
-	parts := []string{"NOTES"}
+	parts := []string{"NOOK"}
 	if s.showTrash {
 		parts = []string{"TRASH"}
 	} else {
