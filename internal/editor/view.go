@@ -57,8 +57,8 @@ func (e Editor) renderRow(r int) string {
 	inside := isInsideFence(e.lines, idx)
 	segs := markdown.RenderLine(raw, inside)
 
-	// A heading is highlighted: its background colours the whole row, and
-	// the inline styles inside it keep the background.
+	// A heading is highlighted: its background colours the text and a few
+	// spaces after it, and the inline styles inside it keep the background.
 	headStyle, isHead := markdown.HeadingStyle(raw)
 	isHead = isHead && !inside
 
@@ -81,14 +81,25 @@ func (e Editor) renderRow(r int) string {
 	}
 	if n := len(segs); n > 0 {
 		fill := e.width - ansi.StringWidth(b.String())
-		if isHead && fill > 0 {
-			b.WriteString(theme.DimStyles[headStyle].Render(strings.Repeat(" ", fill)))
+		if isHead {
+			// The highlight ends a little after the text, not at the edge of
+			// the screen; the title itself keeps its place.
+			if fill > headingPad {
+				fill = headingPad
+			}
+			if fill > 0 {
+				b.WriteString(theme.DimStyles[headStyle].Render(strings.Repeat(" ", fill)))
+			}
 		} else {
 			b.WriteString(blockFill(segs[n-1].Style, fill))
 		}
 	}
 	return truncate(b.String(), e.width)
 }
+
+// headingPad is the number of spaces that the highlight of a heading
+// extends past the end of its text.
+const headingPad = 2
 
 // blockFill extends rules and code fences with "─" up to the width of the
 // editor, and code lines with spaces, so that a code block reads as a panel.
