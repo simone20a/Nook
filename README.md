@@ -4,6 +4,10 @@
 
 **Nook** is a terminal markdown note editor written in Go with [Bubble Tea](https://github.com/charmbracelet/bubbletea). Notes live in a small local SQLite database, are organised in folders, and are written with a **Focus Line**: the line you are typing always stays in the middle of the screen as raw markdown, while the rest of the document scrolls around it already rendered (headings, bold, links, quotes, lists and checkboxes without their markers).
 
+<p align="center">
+  <img src="brand/nook-demo.gif" alt="Nook in action: note list and Focus Line editor" width="720">
+</p>
+
 ## Why Nook
 
 - **Write without distractions.** The cursor doesn't move: the text does. Your eye always stays on the same spot.
