@@ -286,6 +286,9 @@ func (s editorScreen) edHitCol(line, cell int) int {
 	return utf8.RuneCountInString(raw[:off])
 }
 
+// edWheelStep is how many lines the document moves for each wheel event.
+const edWheelStep = 2
+
 // edUpdateMouse handles the editor's mouse: only in edEditing and only for the
 // press of the left button. A click maps the cell to (raw line,
 // raw column) and brings the cursor there, so that line becomes the Focus
@@ -295,6 +298,19 @@ func (s editorScreen) edHitCol(line, cell int) int {
 // already placed it there, while the view may have scrolled.
 func (s editorScreen) edUpdateMouse(m tea.MouseMsg) (editorScreen, tea.Cmd) {
 	if s.mode != edEditing {
+		return s, nil
+	}
+
+	// Wheel and two-finger touchpad scroll: the document moves under the
+	// Focus Line, which stays where it is.
+	switch m.Button {
+	case tea.MouseButtonWheelUp:
+		s.ed = s.ed.Scroll(-edWheelStep)
+		s.dragging = false
+		return s, nil
+	case tea.MouseButtonWheelDown:
+		s.ed = s.ed.Scroll(edWheelStep)
+		s.dragging = false
 		return s, nil
 	}
 

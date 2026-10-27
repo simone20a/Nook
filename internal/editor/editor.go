@@ -237,6 +237,24 @@ func (e Editor) moveDown() Editor {
 	return e
 }
 
+// Scroll moves the cursor by n lines (negative = up), staying inside the
+// document and clearing the selection. Since the cursor line is the Focus
+// Line, the document scrolls under it: this is what the mouse wheel and the
+// touchpad do.
+func (e Editor) Scroll(n int) Editor {
+	e.clearSelection()
+	e.cursorLine += n
+	if e.cursorLine > len(e.lines)-1 {
+		e.cursorLine = len(e.lines) - 1
+	}
+	if e.cursorLine < 0 {
+		e.cursorLine = 0
+	}
+	e.clampCol()
+	e.ensureCursorVisible()
+	return e
+}
+
 // moveLeft moves the cursor one rune to the left, across lines.
 func (e Editor) moveLeft() Editor {
 	e.clearSelection()

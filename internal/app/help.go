@@ -107,6 +107,7 @@ var helpPages = []helpPage{
 		hk("click", "move the cursor there"),
 		hk("double click", "select the word"),
 		hk("triple click", "select the line"),
+		hk("wheel / two fingers", "scroll the document under the Focus Line"),
 		hk("drag", "select with the left button held"),
 		hk("shift + drag", "native terminal selection"),
 	}},

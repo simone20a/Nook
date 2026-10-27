@@ -109,3 +109,22 @@ func TestDoubleClickSelectsWord(t *testing.T) {
 		t.Errorf("the double-click selection crosses several lines: %q", sel)
 	}
 }
+
+// TestMouseWheelScrollsDocument checks that the wheel moves the document under
+// the Focus Line (the cursor line changes) and stops at the document edges.
+func TestMouseWheelScrollsDocument(t *testing.T) {
+	s := newDragTestScreen(t)
+
+	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionPress, Button: tea.MouseButtonWheelDown, X: 6, Y: 5})
+	if got := s.ed.CursorRow(); got != 3 {
+		t.Fatalf("CursorRow after wheel down = %d, want 3", got)
+	}
+	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionPress, Button: tea.MouseButtonWheelDown, X: 6, Y: 5})
+	if got := s.ed.CursorRow(); got != 3 {
+		t.Fatalf("CursorRow at the end = %d, want 3", got)
+	}
+	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionPress, Button: tea.MouseButtonWheelUp, X: 6, Y: 5})
+	if got := s.ed.CursorRow(); got != 1 {
+		t.Fatalf("CursorRow after wheel up = %d, want 1", got)
+	}
+}

@@ -13,7 +13,7 @@
 - **Write without distractions.** The cursor doesn't move: the text does. Your eye always stays on the same spot.
 - **Real markdown, nicely seen.** Only the focused line shows raw text; the others are rendered with coloured styles and a fixed, muted palette.
 - **A menu for your notes.** A list centred on the selected entry, nested folders, a trash with restore, title filter, rename and on-the-fly creation.
-- **Keyboard and mouse.** Every action has a shortcut; click, double click, triple click and drag work as you would expect.
+- **Keyboard and mouse.** Every action has a shortcut; click, double click, triple click, drag and wheel/touchpad scrolling work as you would expect.
 - **Nothing fragile.** Notes are stored in SQLite and deletion is soft: a trashed note can be recovered until you delete it forever.
 
 ## Installation
@@ -114,6 +114,9 @@ The selection is visible: selected text is highlighted both on the (raw) Focus
 Line and on rendered lines, where the highlight is mapped onto the markdown
 segments. Typing or deleting replaces the selected text; formatting actions wrap
 it.
+
+Scrolling with the mouse wheel or a two-finger touchpad gesture moves the document
+under the Focus Line, which stays where it is.
 
 Mouse: a click makes the clicked line the Focus Line (the column is mapped onto
 the raw text through the markdown segments), a double click selects the word, a
