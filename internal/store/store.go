@@ -1,4 +1,4 @@
-// Package store contiene il repository SQLite delle note.
+// Package store contains the SQLite repository for notes.
 package store
 
 import (
@@ -11,22 +11,22 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-// ErrTitleExists viene restituito quando si tenta di usare un titolo già
-// presente nella base dati (confronto case-insensitive).
-var ErrTitleExists = errors.New("una nota con questo titolo esiste già")
+// ErrTitleExists is returned when trying to use a title that is already
+// present in the database (case-insensitive comparison).
+var ErrTitleExists = errors.New("a note with this title already exists")
 
-// Note è una nota così come è memorizzata nello store.
+// Note is a note as it is stored in the store.
 type Note struct {
 	ID        int64
 	Title     string
 	Body      string
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	// FolderID è la cartella che contiene la nota; nil = radice.
+	// FolderID is the folder that contains the note; nil = root.
 	FolderID *int64
 }
 
-// Store avvolge il database SQLite delle note.
+// Store wraps the notes SQLite database.
 type Store struct {
 	db *sql.DB
 }
@@ -41,8 +41,8 @@ CREATE TABLE IF NOT EXISTS notes (
     deleted_at TEXT
 );`
 
-// createFoldersSQL crea la tabella delle cartelle: parent_id nil vuol dire
-// radice, e il nome è unico fra cartelle con lo stesso genitore.
+// createFoldersSQL creates the folders table: parent_id nil means
+// root, and the name is unique among folders with the same parent.
 const createFoldersSQL = `
 CREATE TABLE IF NOT EXISTS folders (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -54,13 +54,13 @@ CREATE TABLE IF NOT EXISTS folders (
 CREATE UNIQUE INDEX IF NOT EXISTS folders_parent_name
     ON folders(IFNULL(parent_id, 0), name COLLATE NOCASE);`
 
-// addNoteFolderSQL collega le note alle cartelle (migrazione 1 -> 2).
+// addNoteFolderSQL links notes to folders (migration 1 -> 2).
 const addNoteFolderSQL = `ALTER TABLE notes ADD COLUMN folder_id INTEGER REFERENCES folders(id);`
 
-// schemaVersion è la versione dello schema scritta in PRAGMA user_version.
+// schemaVersion is the schema version written in PRAGMA user_version.
 const schemaVersion = 2
 
-// Open apre (o crea) il database al percorso indicato ed esegue la migrazione.
+// Open opens (or creates) the database at the given path and runs the migration.
 func Open(path string) (*Store, error) {
 	db, err := sql.Open("sqlite", path)
 	if err != nil {
@@ -74,8 +74,8 @@ func Open(path string) (*Store, error) {
 	return s, nil
 }
 
-// migrate porta lo schema alla versione corrente, partendo da un database nuovo
-// (versione 0) o da uno creato da una versione precedente dell'applicazione.
+// migrate brings the schema to the current version, starting from a new database
+// (version 0) or from one created by a previous version of the application.
 func (s *Store) migrate() error {
 	var version int
 	if err := s.db.QueryRow("PRAGMA user_version").Scan(&version); err != nil {
@@ -93,9 +93,9 @@ func (s *Store) migrate() error {
 		if _, err := s.db.Exec(createFoldersSQL); err != nil {
 			return err
 		}
-		// Un database nuovo ha già tutte le colonne; solo quelli vecchi vanno
-		// alterati. Si controlla la presenza della colonna invece della versione
-		// per non dipendere dall'ordine delle migrazioni.
+		// A new database already has all the columns; only old ones need to
+		// be altered. The presence of the column is checked instead of the version
+		// so as not to depend on the order of the migrations.
 		has, err := s.hasColumn("notes", "folder_id")
 		if err != nil {
 			return err
@@ -110,7 +110,7 @@ func (s *Store) migrate() error {
 	return err
 }
 
-// hasColumn indica se la tabella table ha la colonna column.
+// hasColumn reports whether the table has the column.
 func (s *Store) hasColumn(table, column string) (bool, error) {
 	rows, err := s.db.Query("PRAGMA table_info(" + table + ")")
 	if err != nil {
@@ -136,18 +136,18 @@ func (s *Store) hasColumn(table, column string) (bool, error) {
 	return false, rows.Err()
 }
 
-// Close chiude il database.
+// Close closes the database.
 func (s *Store) Close() error {
 	return s.db.Close()
 }
 
-// Create inserisce una nuova nota alla radice, con corpo vuoto.
+// Create inserts a new note at the root, with an empty body.
 func (s *Store) Create(title string) (*Note, error) {
 	return s.CreateIn(title, nil)
 }
 
-// CreateIn inserisce una nuova nota con corpo vuoto nella cartella folderID
-// (nil = radice) e restituisce la nota creata.
+// CreateIn inserts a new note with an empty body in the folder folderID
+// (nil = root) and returns the created note.
 func (s *Store) CreateIn(title string, folderID *int64) (*Note, error) {
 	now := nowString()
 	res, err := s.db.Exec(
@@ -167,9 +167,9 @@ func (s *Store) CreateIn(title string, folderID *int64) (*Note, error) {
 	return s.Get(id)
 }
 
-// List restituisce tutte le note, di qualunque cartella: attive
-// (includeDeleted == false) oppure eliminate (includeDeleted == true),
-// ordinate per updated_at DESC, id DESC.
+// List returns all notes, from any folder: active
+// (includeDeleted == false) or deleted (includeDeleted == true),
+// ordered by updated_at DESC, id DESC.
 func (s *Store) List(includeDeleted bool) ([]Note, error) {
 	query := "SELECT id, title, body, created_at, updated_at, deleted_at, folder_id FROM notes"
 	if includeDeleted {
@@ -181,10 +181,10 @@ func (s *Store) List(includeDeleted bool) ([]Note, error) {
 	return s.queryNotes(query)
 }
 
-// ListIn restituisce le note di una cartella (folderID nil = radice): attive
-// oppure eliminate. Con recursive true comprende anche le note delle
-// sottocartelle, altrimenti solo quelle contenute direttamente; applicato alla
-// radice, recursive comprende quindi l'intero archivio.
+// ListIn returns the notes of a folder (folderID nil = root): active
+// or deleted. With recursive true it also includes the notes of the
+// subfolders, otherwise only those directly contained; applied to the
+// root, recursive therefore includes the whole archive.
 func (s *Store) ListIn(folderID *int64, includeDeleted, recursive bool) ([]Note, error) {
 	query := "SELECT id, title, body, created_at, updated_at, deleted_at, folder_id FROM notes"
 	if includeDeleted {
@@ -196,7 +196,7 @@ func (s *Store) ListIn(folderID *int64, includeDeleted, recursive bool) ([]Note,
 	var args []any
 	switch {
 	case recursive && folderID == nil:
-		// Radice ricorsiva: tutto l'archivio, nessun filtro sulla cartella.
+		// Recursive root: the whole archive, no filter on the folder.
 	case recursive:
 		query += " AND folder_id IN " + subtreeSQL
 		args = append(args, *folderID)
@@ -210,7 +210,7 @@ func (s *Store) ListIn(folderID *int64, includeDeleted, recursive bool) ([]Note,
 	return s.queryNotes(query, args...)
 }
 
-// queryNotes esegue una query che restituisce note e le raccoglie.
+// queryNotes runs a query that returns notes and collects them.
 func (s *Store) queryNotes(query string, args ...any) ([]Note, error) {
 	rows, err := s.db.Query(query, args...)
 	if err != nil {
@@ -229,7 +229,7 @@ func (s *Store) queryNotes(query string, args ...any) ([]Note, error) {
 	return notes, rows.Err()
 }
 
-// Get restituisce la nota con l'id indicato, anche se eliminata.
+// Get returns the note with the given id, even if deleted.
 func (s *Store) Get(id int64) (*Note, error) {
 	row := s.db.QueryRow(
 		"SELECT id, title, body, created_at, updated_at, deleted_at, folder_id FROM notes WHERE id = ?", id,
@@ -237,7 +237,7 @@ func (s *Store) Get(id int64) (*Note, error) {
 	return scanNote(row)
 }
 
-// Rename cambia il titolo di una nota senza toccare corpo e updated_at.
+// Rename changes the title of a note without touching body and updated_at.
 func (s *Store) Rename(id int64, newTitle string) error {
 	_, err := s.db.Exec("UPDATE notes SET title = ? WHERE id = ?", newTitle, id)
 	if err != nil {
@@ -249,7 +249,7 @@ func (s *Store) Rename(id int64, newTitle string) error {
 	return nil
 }
 
-// Save salva titolo e corpo di una nota aggiornando updated_at.
+// Save saves title and body of a note, updating updated_at.
 func (s *Store) Save(id int64, title, body string) error {
 	_, err := s.db.Exec(
 		"UPDATE notes SET title = ?, body = ?, updated_at = ? WHERE id = ?",
@@ -264,15 +264,15 @@ func (s *Store) Save(id int64, title, body string) error {
 	return nil
 }
 
-// SoftDelete marca la nota come eliminata.
+// SoftDelete marks the note as deleted.
 func (s *Store) SoftDelete(id int64) error {
 	_, err := s.db.Exec("UPDATE notes SET deleted_at = ? WHERE id = ?", nowString(), id)
 	return err
 }
 
-// Restore annulla l'eliminazione di una nota. Se la sua cartella è nel cestino
-// o non esiste più, la nota torna alla radice: altrimenti sarebbe attiva ma
-// invisibile.
+// Restore undoes the deletion of a note. If its folder is in the trash
+// or no longer exists, the note goes back to the root: otherwise it would be active but
+// invisible.
 func (s *Store) Restore(id int64) error {
 	_, err := s.db.Exec(`
 UPDATE notes SET deleted_at = NULL,
@@ -284,13 +284,13 @@ WHERE id = ?`, id)
 	return err
 }
 
-// Purge elimina definitivamente la nota.
+// Purge permanently deletes the note.
 func (s *Store) Purge(id int64) error {
 	_, err := s.db.Exec("DELETE FROM notes WHERE id = ?", id)
 	return err
 }
 
-// rowScanner è soddisfatta sia da *sql.Row sia da *sql.Rows.
+// rowScanner is satisfied by both *sql.Row and *sql.Rows.
 type rowScanner interface {
 	Scan(dest ...any) error
 }
@@ -335,8 +335,8 @@ func isUniqueViolation(err error) bool {
 	return err != nil && strings.Contains(strings.ToLower(err.Error()), "unique constraint failed")
 }
 
-// openRaw apre il database senza applicare la migrazione: serve ai test che
-// devono costruire un database di una versione precedente dello schema.
+// openRaw opens the database without applying the migration: it is used by tests that
+// need to build a database of a previous schema version.
 func openRaw(path string) (*sql.DB, error) {
 	return sql.Open("sqlite", path)
 }

@@ -4,29 +4,29 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// --- Dispatch dei tasti ---
+// --- Key dispatch ---
 
-// Update gestisce i messaggi diretti all'editor.
+// Update handles the messages addressed to the editor.
 //
-// Schema dei tasti:
-//   - sistema: "ctrl+s" (o "f2") salva, "ctrl+q" chiede di uscire (la schermata
-//     decide se mostrare il popup Salva/Scarta/Annulla in base a Dirty),
-//     "ctrl+c" chiede di uscire sempre.
-//   - formattazione: prefisso "ctrl+t", la lettera successiva applica l'azione;
-//     qualsiasi altro tasto annulla l'attesa e viene gestito normalmente qui
-//     sotto. "f3" non attende una lettera: segnala con WantsPalette che la
-//     schermata deve aprire la palette di formattazione, che poi applica la
-//     voce scelta con ApplyFormat.
-//   - movimento: frecce, "home", "end", "ctrl+up", "ctrl+down", "ctrl+home",
-//     "ctrl+end", "pgup", "pgdown"; "ctrl+left"/"alt+left" portano all'inizio
-//     della parola corrente o precedente, "ctrl+right"/"alt+right" alla fine
-//     della parola corrente o successiva; "shift+ctrl+left" e
-//     "shift+ctrl+right" fanno gli stessi movimenti estendendo la selezione.
-//   - cancellazione: "backspace", "delete", "alt+backspace" (fino all'inizio
-//     della parola corrente o precedente), "ctrl+u" (dal cursore a inizio riga)
-//     e "ctrl+k" (dal cursore a fine riga).
-//   - testo: tutte le rune di key.Runes (spazio, IME, paste); un paste
-//     multilinea spezza la riga su '\n'.
+// Key scheme:
+//   - system: "ctrl+s" (or "f2") saves, "ctrl+q" asks to exit (the screen
+//     decides whether to show the Save/Discard/Cancel popup based on Dirty),
+//     "ctrl+c" always asks to exit.
+//   - formatting: "ctrl+t" prefix, the next letter applies the action;
+//     any other key cancels the wait and is handled normally further
+//     down. "f3" does not wait for a letter: it signals with WantsPalette that the
+//     screen has to open the formatting palette, which then applies the
+//     chosen entry with ApplyFormat.
+//   - movement: arrows, "home", "end", "ctrl+up", "ctrl+down", "ctrl+home",
+//     "ctrl+end", "pgup", "pgdown"; "ctrl+left"/"alt+left" go to the start
+//     of the current or previous word, "ctrl+right"/"alt+right" to the end
+//     of the current or next word; "shift+ctrl+left" and
+//     "shift+ctrl+right" make the same movements extending the selection.
+//   - deletion: "backspace", "delete", "alt+backspace" (up to the start
+//     of the current or previous word), "ctrl+u" (from the cursor to the start of the line)
+//     and "ctrl+k" (from the cursor to the end of the line).
+//   - text: all the runes of key.Runes (space, IME, paste); a multi-line
+//     paste splits the line on '\n'.
 func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	key, ok := msg.(tea.KeyMsg)
 	if !ok {
@@ -34,16 +34,16 @@ func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	s := key.String()
 
-	// ctrl+c esce sempre, anche con il prefisso di formattazione in attesa.
+	// ctrl+c always quits, even with the formatting prefix pending.
 	if s == "ctrl+c" {
 		e.awaitingFormat = false
 		e.WantsQuit = true
 		return e, nil
 	}
 
-	// Prefisso "ctrl+t": lo consuma SOLO una lettera di formattazione.
-	// Qualunque altro tasto annulla l'attesa e prosegue nella gestione normale
-	// (sistema, movimenti, testo), senza perdere il proprio effetto.
+	// "ctrl+t" prefix: ONLY a formatting letter consumes it.
+	// Any other key cancels the wait and continues with normal handling
+	// (system, movements, text), without losing its own effect.
 	if e.awaitingFormat {
 		e.awaitingFormat = false
 		if isFormatKey(s) {
@@ -61,7 +61,7 @@ func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case "ctrl+t":
 		e.awaitingFormat = true
 	case "f3":
-		// F3 non è un prefisso: chiede alla schermata di aprire la palette.
+		// F3 is not a prefix: it asks the screen to open the palette.
 		e.WantsPalette = true
 
 	case "up":
@@ -130,20 +130,20 @@ func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return e, nil
 }
 
-// insertKeyText inserisce il testo trasportato dal tasto: TUTTE le rune di
-// key.Runes, senza richiedere key.Type == tea.KeyRunes (lo spazio arriva come
-// tea.KeySpace con Runes [" "], il testo IME e il paste come KeyRunes con più
-// rune). Vengono saltate solo le rune di controllo; un '\n' spezza la riga.
+// insertKeyText inserts the text carried by the key: ALL the runes of
+// key.Runes, without requiring key.Type == tea.KeyRunes (space arrives as
+// tea.KeySpace with Runes [" "], IME text and paste as KeyRunes with several
+// runes). Only control runes are skipped; a '\n' splits the line.
 func (e Editor) insertKeyText(key tea.KeyMsg) Editor {
 	if key.Alt || len(key.Runes) == 0 {
 		return e
 	}
 	for _, r := range key.Runes {
-		// Paste Windows "\r\n": il ritorno a capo è gestito dal '\n' che segue.
+		// Windows paste "\r\n": the line break is handled by the '\n' that follows.
 		if key.Paste && r == '\r' {
 			continue
 		}
-		// Un paste multilinea spezza la riga invece di inserire '\n'.
+		// A multi-line paste splits the line instead of inserting '\n'.
 		if r == '\n' {
 			e.newline()
 			continue
@@ -156,7 +156,7 @@ func (e Editor) insertKeyText(key tea.KeyMsg) Editor {
 	return e
 }
 
-// isFormatKey dice se s è una delle lettere che consumano il prefisso "ctrl+t".
+// isFormatKey reports whether s is one of the letters that consume the "ctrl+t" prefix.
 func isFormatKey(s string) bool {
 	switch s {
 	case "b", "i", "h", "k", "x", "l", "q", "s", "u", "0":
@@ -165,9 +165,9 @@ func isFormatKey(s string) bool {
 	return false
 }
 
-// applyFormatKey applica la formattazione scelta dal tasto che segue il
-// prefisso "ctrl+t". Un tasto non previsto non fa nulla (l'attesa è già stata
-// annullata da Update, che lo gestisce normalmente).
+// applyFormatKey applies the formatting chosen by the key that follows the
+// "ctrl+t" prefix. An unexpected key does nothing (the wait has already been
+// cancelled by Update, which handles it normally).
 func (e Editor) applyFormatKey(s string) Editor {
 	switch s {
 	case "b":
@@ -194,17 +194,17 @@ func (e Editor) applyFormatKey(s string) Editor {
 	return e
 }
 
-// ApplyFormat applica la formattazione della lettera data: esegue la stessa
-// azione di applyFormatKey (quella del prefisso "ctrl+t") per b i h k x l q s u
-// 0. È il punto d'ingresso della palette di formattazione (F3), che sceglie la
-// lettera e la passa qui; una lettera non prevista lascia l'editor invariato.
+// ApplyFormat applies the formatting of the given letter: it performs the same
+// action as applyFormatKey (the one of the "ctrl+t" prefix) for b i h k x l q s u
+// 0. It is the entry point of the formatting palette (F3), which chooses the
+// letter and passes it here; an unexpected letter leaves the editor unchanged.
 func (e Editor) ApplyFormat(letter string) Editor {
 	return e.applyFormatKey(letter)
 }
 
-// withSelection esegue un movimento mantenendo attiva la selezione:
-// beginSelection prima del movimento, ancora e selezione ripristinate dopo
-// (i movimenti senza shift azzerano la selezione).
+// withSelection performs a movement keeping the selection active:
+// beginSelection before the movement, anchor and selection restored afterwards
+// (movements without shift clear the selection).
 func withSelection(e Editor, move func(Editor) Editor) Editor {
 	e.beginSelection()
 	al, ac := e.anchorLine, e.anchorCol
@@ -215,14 +215,14 @@ func withSelection(e Editor, move func(Editor) Editor) Editor {
 	return e
 }
 
-// --- Movimento per parola ---
+// --- Movement by word ---
 //
-// Parola = sequenza di lettere, cifre o underscore (isSelectWordRune); ogni
-// altro carattere separa. I movimenti per parola restano dentro la riga del
-// cursore: a inizio o fine riga non scavalcano la riga.
+// Word = sequence of letters, digits or underscore (isSelectWordRune); every
+// other character separates. Word movements stay inside the cursor's
+// line: at the start or end of the line they do not cross to another line.
 
-// wordStartCol è la colonna d'inizio della parola corrente o precedente:
-// salta prima i separatori a sinistra di col, poi la parola stessa.
+// wordStartCol is the start column of the current or previous word:
+// it first skips the separators to the left of col, then the word itself.
 func wordStartCol(line []rune, col int) int {
 	i := col
 	if i > len(line) {
@@ -240,9 +240,9 @@ func wordStartCol(line []rune, col int) int {
 	return i
 }
 
-// wordEndCol è la colonna di fine della parola corrente o successiva: se col è
-// dentro una parola (o sul suo primo carattere) salta la parola, altrimenti
-// salta i separatori e poi la parola che segue.
+// wordEndCol is the end column of the current or next word: if col is
+// inside a word (or on its first character) it skips the word, otherwise it
+// skips the separators and then the word that follows.
 func wordEndCol(line []rune, col int) int {
 	i := col
 	if i < 0 {
@@ -266,7 +266,7 @@ func wordEndCol(line []rune, col int) int {
 	return i
 }
 
-// moveWordLeft porta il cursore all'inizio della parola corrente o precedente.
+// moveWordLeft brings the cursor to the start of the current or previous word.
 func (e Editor) moveWordLeft() Editor {
 	e.clearSelection()
 	e.cursorCol = wordStartCol([]rune(e.currentLine()), e.cursorCol)
@@ -274,7 +274,7 @@ func (e Editor) moveWordLeft() Editor {
 	return e
 }
 
-// moveWordRight porta il cursore alla fine della parola corrente o successiva.
+// moveWordRight brings the cursor to the end of the current or next word.
 func (e Editor) moveWordRight() Editor {
 	e.clearSelection()
 	e.cursorCol = wordEndCol([]rune(e.currentLine()), e.cursorCol)
@@ -282,9 +282,9 @@ func (e Editor) moveWordRight() Editor {
 	return e
 }
 
-// --- Modifica del testo ---
+// --- Text editing ---
 
-// insertRune inserisce una runa alla posizione del cursore.
+// insertRune inserts a rune at the cursor position.
 func (e *Editor) insertRune(r rune) {
 	if e.selecting {
 		e.deleteSelection()
@@ -296,7 +296,7 @@ func (e *Editor) insertRune(r rune) {
 	e.ensureCursorVisible()
 }
 
-// backspace cancella la runa prima del cursore o unisce alla riga precedente.
+// backspace deletes the rune before the cursor or merges with the previous line.
 func (e *Editor) backspace() {
 	if e.selecting {
 		e.deleteSelection()
@@ -320,7 +320,7 @@ func (e *Editor) backspace() {
 	e.ensureCursorVisible()
 }
 
-// deleteForward cancella la runa al cursore o unisce la riga successiva.
+// deleteForward deletes the rune at the cursor or merges the next line.
 func (e *Editor) deleteForward() {
 	if e.selecting {
 		e.deleteSelection()
@@ -340,8 +340,8 @@ func (e *Editor) deleteForward() {
 	e.ensureCursorVisible()
 }
 
-// deleteRange cancella le colonne [from, to) della riga del cursore e lascia il
-// cursore in from. Le colonne vengono riportate dentro la riga.
+// deleteRange deletes the columns [from, to) of the cursor's line and leaves the
+// cursor at from. The columns are brought back inside the line.
 func (e *Editor) deleteRange(from, to int) {
 	line := []rune(e.currentLine())
 	if from < 0 {
@@ -365,9 +365,9 @@ func (e *Editor) deleteRange(from, to int) {
 	e.ensureCursorVisible()
 }
 
-// deleteWordBack cancella dal cursore fino all'inizio della parola corrente o
-// precedente (alt+backspace). A inizio riga, senza parola prima del cursore,
-// non cancella nulla.
+// deleteWordBack deletes from the cursor to the start of the current or
+// previous word (alt+backspace). At the start of a line, with no word before the cursor,
+// it deletes nothing.
 func (e *Editor) deleteWordBack() {
 	if e.selecting {
 		e.deleteSelection()
@@ -377,7 +377,7 @@ func (e *Editor) deleteWordBack() {
 	e.deleteRange(wordStartCol([]rune(e.currentLine()), e.cursorCol), e.cursorCol)
 }
 
-// deleteToLineStart cancella dal cursore a inizio riga (ctrl+u).
+// deleteToLineStart deletes from the cursor to the start of the line (ctrl+u).
 func (e *Editor) deleteToLineStart() {
 	if e.selecting {
 		e.deleteSelection()
@@ -387,7 +387,7 @@ func (e *Editor) deleteToLineStart() {
 	e.deleteRange(0, e.cursorCol)
 }
 
-// deleteToLineEnd cancella dal cursore a fine riga (ctrl+k).
+// deleteToLineEnd deletes from the cursor to the end of the line (ctrl+k).
 func (e *Editor) deleteToLineEnd() {
 	if e.selecting {
 		e.deleteSelection()
@@ -397,7 +397,7 @@ func (e *Editor) deleteToLineEnd() {
 	e.deleteRange(e.cursorCol, runeLen(e.currentLine()))
 }
 
-// newline spezza la riga al cursore e inserisce la nuova riga sotto.
+// newline splits the line at the cursor and inserts the new line below.
 func (e *Editor) newline() {
 	if e.selecting {
 		e.deleteSelection()
@@ -413,7 +413,7 @@ func (e *Editor) newline() {
 	e.ensureCursorVisible()
 }
 
-// deleteSelection cancella il testo selezionato.
+// deleteSelection deletes the selected text.
 func (e *Editor) deleteSelection() {
 	if !e.selecting {
 		return

@@ -8,14 +8,14 @@ import (
 	"nook/internal/markdown"
 )
 
-// Editor è il modello dell'editor di testo.
+// Editor is the model of the text editor.
 type Editor struct {
-	Dirty     bool // esportato
-	WantsSave bool // esportato, true quando Update riceve ctrl+s
-	WantsExit bool // esportato, true quando Update riceve ctrl+q (o esc): chiede di uscire
-	WantsQuit bool // esportato, true quando Update riceve ctrl+c: esce sempre
-	// WantsPalette è esportato: true quando Update riceve f3, cioè quando va
-	// aperta la palette di formattazione. La schermata lo legge e lo azzera.
+	Dirty     bool // exported
+	WantsSave bool // exported, true when Update receives ctrl+s
+	WantsExit bool // exported, true when Update receives ctrl+q (or esc): asks to exit
+	WantsQuit bool // exported, true when Update receives ctrl+c: always quits
+	// WantsPalette is exported: true when Update receives f3, that is when the
+	// formatting palette has to be opened. The screen reads it and resets it.
 	WantsPalette bool
 
 	lines          []string
@@ -27,16 +27,16 @@ type Editor struct {
 	selecting      bool
 	anchorLine     int
 	anchorCol      int
-	awaitingFormat bool // true dopo ctrl+t: il prossimo tasto formatta
+	awaitingFormat bool // true after ctrl+t: the next key formats
 }
 
-// runeLen conta le rune di una stringa.
+// runeLen counts the runes of a string.
 func runeLen(s string) int { return len([]rune(s)) }
 
-// New crea un Editor sulle righe date; se lines è nil usa una riga vuota.
-// Il cursore parte in fondo alla prima riga, cioè dopo l'ultima runa del testo
-// già presente: così la prima runa digitata si accoda al testo esistente
-// invece di finirgli davanti, e il cursore resta visibile.
+// New creates an Editor on the given lines; if lines is nil it uses one empty line.
+// The cursor starts at the end of the first line, that is after the last rune of the text
+// already there: so the first rune typed is appended to the existing text
+// instead of ending up in front of it, and the cursor stays visible.
 func New(lines []string, width, height int) Editor {
 	if lines == nil {
 		lines = []string{""}
@@ -52,30 +52,30 @@ func New(lines []string, width, height int) Editor {
 	return e
 }
 
-// Init non esegue alcun comando.
+// Init does not run any command.
 func (e Editor) Init() tea.Cmd { return nil }
 
-// Lines restituisce una copia delle righe.
+// Lines returns a copy of the lines.
 func (e Editor) Lines() []string {
 	out := make([]string, len(e.lines))
 	copy(out, e.lines)
 	return out
 }
 
-// LineCount è il numero di righe.
+// LineCount is the number of lines.
 func (e Editor) LineCount() int { return len(e.lines) }
 
-// CursorRow è il numero di riga del cursore, 1-based.
+// CursorRow is the cursor's line number, 1-based.
 func (e Editor) CursorRow() int { return e.cursorLine + 1 }
 
-// CursorCol1 è il numero di colonna del cursore, 1-based.
+// CursorCol1 is the cursor's column number, 1-based.
 func (e Editor) CursorCol1() int { return e.cursorCol + 1 }
 
-// AwaitingFormat dice se l'editor aspetta il tasto che applica la formattazione
-// (vero dopo ctrl+t): la schermata lo usa per il testo del footer.
+// AwaitingFormat says whether the editor is waiting for the key that applies formatting
+// (true after ctrl+t): the screen uses it for the footer text.
 func (e Editor) AwaitingFormat() bool { return e.awaitingFormat }
 
-// SetSize aggiorna le dimensioni e rende visibile il cursore.
+// SetSize updates the dimensions and makes the cursor visible.
 func (e Editor) SetSize(width, height int) Editor {
 	e.width = width
 	e.height = height
@@ -83,9 +83,9 @@ func (e Editor) SetSize(width, height int) Editor {
 	return e
 }
 
-// --- Geometria ---
+// --- Geometry ---
 
-// focusRow è la riga dello schermo dove si trova la riga del cursore.
+// focusRow is the screen row where the cursor's line is located.
 func (e Editor) focusRow() int {
 	r := (e.height - 1) / 2
 	if r < 0 {
@@ -94,16 +94,16 @@ func (e Editor) focusRow() int {
 	return r
 }
 
-// docIndexForRow converte una riga dello schermo nell'indice di documento.
+// docIndexForRow converts a screen row into the document index.
 func (e Editor) docIndexForRow(r int) int {
 	return e.cursorLine - e.focusRow() + r
 }
 
-// LineAtRow restituisce l'indice della riga di documento disegnata nella riga r
-// dello schermo dell'editor: la view rende una riga per ogni riga di documento,
-// con la riga del cursore sulla riga di focus. Il secondo valore è falso quando
-// r è fuori dalla view o quando la riga non corrisponde a nessuna riga del
-// documento (per esempio le righe vuote oltre gli estremi).
+// LineAtRow returns the index of the document line drawn on row r
+// of the editor's screen: the view renders one row for each document line,
+// with the cursor's line on the focus row. The second value is false when
+// r is outside the view or when the row does not correspond to any line of the
+// document (for example the empty rows beyond the ends).
 func (e Editor) LineAtRow(r int) (int, bool) {
 	if r < 0 || r >= e.height {
 		return 0, false
@@ -115,7 +115,7 @@ func (e Editor) LineAtRow(r int) (int, bool) {
 	return idx, true
 }
 
-// LineAt restituisce il testo della riga idx, "" se è fuori dal documento.
+// LineAt returns the text of line idx, "" if it is outside the document.
 func (e Editor) LineAt(idx int) string {
 	if idx < 0 || idx >= len(e.lines) {
 		return ""
@@ -123,10 +123,10 @@ func (e Editor) LineAt(idx int) string {
 	return e.lines[idx]
 }
 
-// LineSegments restituisce i segmenti markdown con cui la view disegna la riga
-// idx fuori dal focus, con dentro-fence calcolato come in renderRow: la
-// schermata li usa per mappare una colonna in celle alla colonna nella riga
-// grezza. Oltre il documento restituisce nil.
+// LineSegments returns the markdown segments with which the view draws line
+// idx when out of focus, with inside-fence computed as in renderRow: the
+// screen uses them to map a column in cells to the column in the raw
+// line. Beyond the document it returns nil.
 func (e Editor) LineSegments(idx int) []markdown.Segment {
 	if idx < 0 || idx >= len(e.lines) {
 		return nil
@@ -134,11 +134,11 @@ func (e Editor) LineSegments(idx int) []markdown.Segment {
 	return markdown.RenderLine(e.lines[idx], isInsideFence(e.lines, idx))
 }
 
-// SetCursor porta il cursore sulla posizione (riga, colonna) data, con la riga
-// e la colonna 0-based in rune, e azzera la selezione. Righe fuori dal
-// documento vengono riportate dentro, la colonna viene riportata entro la fine
-// della riga; il cursore risultante resta visibile. La riga del cursore è la
-// riga di focus, quindi la riga indicata diventa la Focus Line.
+// SetCursor moves the cursor to the given (line, column) position, with line
+// and column 0-based in runes, and clears the selection. Lines outside the
+// document are brought back inside, the column is brought back within the end
+// of the line; the resulting cursor stays visible. The cursor's line is the
+// focus line, so the given line becomes the Focus Line.
 func (e Editor) SetCursor(line, col int) Editor {
 	e.clearSelection()
 	if line < 0 {
@@ -162,7 +162,7 @@ func (e Editor) SetCursor(line, col int) Editor {
 	return e
 }
 
-// ensureCursorVisible aggiusta lo scroll orizzontale perché il cursore resti in vista.
+// ensureCursorVisible adjusts the horizontal scroll so that the cursor stays in view.
 func (e *Editor) ensureCursorVisible() {
 	if e.cursorCol < e.hScroll {
 		e.hScroll = e.cursorCol
@@ -175,15 +175,15 @@ func (e *Editor) ensureCursorVisible() {
 	}
 }
 
-// clampCol riporta il cursore entro la fine della riga corrente.
+// clampCol brings the cursor back within the end of the current line.
 func (e *Editor) clampCol() {
 	if e.cursorCol > runeLen(e.currentLine()) {
 		e.cursorCol = runeLen(e.currentLine())
 	}
 }
 
-// clampedLine restituisce la riga corrente come rune, dopo aver riportato la
-// colonna del cursore dentro [0, lunghezza della riga].
+// clampedLine returns the current line as runes, after bringing the
+// cursor column back inside [0, length of the line].
 func (e *Editor) clampedLine() []rune {
 	line := []rune(e.currentLine())
 	if e.cursorCol > len(line) {
@@ -195,8 +195,8 @@ func (e *Editor) clampedLine() []rune {
 	return line
 }
 
-// replaceLines sostituisce le righe da sl a el (estremi inclusi) con la sola
-// riga merged.
+// replaceLines replaces the lines from sl to el (both included) with the single
+// line merged.
 func (e *Editor) replaceLines(sl, el int, merged string) {
 	out := make([]string, 0, len(e.lines)-(el-sl))
 	out = append(out, e.lines[:sl]...)
@@ -205,7 +205,7 @@ func (e *Editor) replaceLines(sl, el int, merged string) {
 	e.lines = out
 }
 
-// currentLine è la riga sotto il cursore ("" se fuori range).
+// currentLine is the line under the cursor ("" if out of range).
 func (e Editor) currentLine() string {
 	if e.cursorLine < 0 || e.cursorLine >= len(e.lines) {
 		return ""
@@ -213,9 +213,9 @@ func (e Editor) currentLine() string {
 	return e.lines[e.cursorLine]
 }
 
-// --- Movimenti ---
+// --- Movements ---
 
-// moveUp sposta il cursore di una riga in su.
+// moveUp moves the cursor one line up.
 func (e Editor) moveUp() Editor {
 	e.clearSelection()
 	if e.cursorLine > 0 {
@@ -226,7 +226,7 @@ func (e Editor) moveUp() Editor {
 	return e
 }
 
-// moveDown sposta il cursore di una riga in giù.
+// moveDown moves the cursor one line down.
 func (e Editor) moveDown() Editor {
 	e.clearSelection()
 	if e.cursorLine < len(e.lines)-1 {
@@ -237,7 +237,7 @@ func (e Editor) moveDown() Editor {
 	return e
 }
 
-// moveLeft sposta il cursore di una runa a sinistra, a cavallo di riga.
+// moveLeft moves the cursor one rune to the left, across lines.
 func (e Editor) moveLeft() Editor {
 	e.clearSelection()
 	if e.cursorCol > 0 {
@@ -250,7 +250,7 @@ func (e Editor) moveLeft() Editor {
 	return e
 }
 
-// moveRight sposta il cursore di una runa a destra, a cavallo di riga.
+// moveRight moves the cursor one rune to the right, across lines.
 func (e Editor) moveRight() Editor {
 	e.clearSelection()
 	if e.cursorCol < runeLen(e.currentLine()) {
@@ -263,7 +263,7 @@ func (e Editor) moveRight() Editor {
 	return e
 }
 
-// moveHome porta il cursore a inizio riga.
+// moveHome brings the cursor to the start of the line.
 func (e Editor) moveHome() Editor {
 	e.clearSelection()
 	e.cursorCol = 0
@@ -271,7 +271,7 @@ func (e Editor) moveHome() Editor {
 	return e
 }
 
-// moveEnd porta il cursore a fine riga.
+// moveEnd brings the cursor to the end of the line.
 func (e Editor) moveEnd() Editor {
 	e.clearSelection()
 	e.cursorCol = runeLen(e.currentLine())
@@ -279,7 +279,7 @@ func (e Editor) moveEnd() Editor {
 	return e
 }
 
-// moveDocStart porta il cursore a inizio documento.
+// moveDocStart brings the cursor to the start of the document.
 func (e Editor) moveDocStart() Editor {
 	e.clearSelection()
 	e.cursorLine = 0
@@ -288,7 +288,7 @@ func (e Editor) moveDocStart() Editor {
 	return e
 }
 
-// moveDocEnd porta il cursore a fine documento.
+// moveDocEnd brings the cursor to the end of the document.
 func (e Editor) moveDocEnd() Editor {
 	e.clearSelection()
 	e.cursorLine = len(e.lines) - 1
@@ -300,7 +300,7 @@ func (e Editor) moveDocEnd() Editor {
 	return e
 }
 
-// pageUp sposta il cursore di height righe in su.
+// pageUp moves the cursor height lines up.
 func (e Editor) pageUp() Editor {
 	e.clearSelection()
 	e.cursorLine -= e.height
@@ -312,7 +312,7 @@ func (e Editor) pageUp() Editor {
 	return e
 }
 
-// pageDown sposta il cursore di height righe in giù.
+// pageDown moves the cursor height lines down.
 func (e Editor) pageDown() Editor {
 	e.clearSelection()
 	e.cursorLine += e.height
@@ -327,9 +327,9 @@ func (e Editor) pageDown() Editor {
 	return e
 }
 
-// --- Selezione ---
+// --- Selection ---
 
-// beginSelection fissa l'ancora della selezione se non è già attiva.
+// beginSelection sets the selection anchor if it is not already active.
 func (e *Editor) beginSelection() {
 	if !e.selecting {
 		e.anchorLine = e.cursorLine
@@ -338,12 +338,12 @@ func (e *Editor) beginSelection() {
 	}
 }
 
-// clearSelection disattiva la selezione.
+// clearSelection deactivates the selection.
 func (e *Editor) clearSelection() {
 	e.selecting = false
 }
 
-// selectedRange normalizza ancora e cursore in ordine crescente di (riga, colonna).
+// selectedRange normalises anchor and cursor in ascending (line, column) order.
 func (e Editor) selectedRange() (sl, sc, el, ec int) {
 	if e.anchorLine < e.cursorLine || (e.anchorLine == e.cursorLine && e.anchorCol <= e.cursorCol) {
 		return e.anchorLine, e.anchorCol, e.cursorLine, e.cursorCol
@@ -351,18 +351,18 @@ func (e Editor) selectedRange() (sl, sc, el, ec int) {
 	return e.cursorLine, e.cursorCol, e.anchorLine, e.anchorCol
 }
 
-// isSelectWordRune dice se r è un carattere di parola per la selezione col
-// mouse: una lettera, una cifra o l'underscore. Ogni altro carattere separa le
-// parole.
+// isSelectWordRune says whether r is a word character for selection with the
+// mouse: a letter, a digit or the underscore. Every other character separates
+// words.
 func isSelectWordRune(r rune) bool {
 	return r == '_' || unicode.IsLetter(r) || unicode.IsDigit(r)
 }
 
-// SelectWord seleziona la parola sotto il cursore, riusando il modello di
-// selezione esistente: l'ancora va all'inizio della parola e il cursore alla sua
-// fine. Se il cursore sta subito dopo una parola (per esempio a fine riga) vale
-// la parola che lo precede. Se sotto il cursore non c'è nessuna parola la
-// selezione viene azzerata e il cursore resta dov'è.
+// SelectWord selects the word under the cursor, reusing the existing selection
+// model: the anchor goes to the start of the word and the cursor to its
+// end. If the cursor is right after a word (for example at the end of the line) the
+// word that precedes it is used. If there is no word under the cursor the
+// selection is cleared and the cursor stays where it is.
 func (e Editor) SelectWord() Editor {
 	line := e.clampedLine()
 	at := e.cursorCol
@@ -391,8 +391,8 @@ func (e Editor) SelectWord() Editor {
 	return e
 }
 
-// SelectLine seleziona l'intera riga del cursore, dall'inizio alla fine, con lo
-// stesso modello di selezione (ancora a colonna 0, cursore in fondo alla riga).
+// SelectLine selects the whole line of the cursor, from start to end, with the
+// same selection model (anchor at column 0, cursor at the end of the line).
 func (e Editor) SelectLine() Editor {
 	e.anchorLine = e.cursorLine
 	e.anchorCol = 0

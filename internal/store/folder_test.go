@@ -6,79 +6,79 @@ import (
 	"testing"
 )
 
-// newFolderTestStore apre uno store su una directory temporanea del test.
+// newFolderTestStore opens a store in a temporary directory of the test.
 func newFolderTestStore(t *testing.T) *Store {
 	t.Helper()
 	st, err := Open(filepath.Join(t.TempDir(), "notes.db"))
 	if err != nil {
-		t.Fatalf("apertura store: %v", err)
+		t.Fatalf("opening store: %v", err)
 	}
 	t.Cleanup(func() { st.Close() })
 	return st
 }
 
-// TestCreateAndListFolders verifica che le cartelle si creino, si elenchino per
-// genitore e che il nome sia unico solo fra pari livello.
+// TestCreateAndListFolders checks that folders can be created, listed by
+// parent, and that the name is unique only among siblings.
 func TestCreateAndListFolders(t *testing.T) {
 	st := newFolderTestStore(t)
 
-	root, err := st.CreateFolder("progetti", nil)
+	root, err := st.CreateFolder("projects", nil)
 	if err != nil {
-		t.Fatalf("creazione cartella: %v", err)
+		t.Fatalf("creating folder: %v", err)
 	}
-	if root.ID <= 0 || root.Name != "progetti" || root.ParentID != nil {
-		t.Fatalf("cartella creata = %+v, attesa con id, nome e nessun genitore", root)
+	if root.ID <= 0 || root.Name != "projects" || root.ParentID != nil {
+		t.Fatalf("created folder = %+v, want one with id, name and no parent", root)
 	}
 
 	child, err := st.CreateFolder("2026", &root.ID)
 	if err != nil {
-		t.Fatalf("creazione sottocartella: %v", err)
+		t.Fatalf("creating subfolder: %v", err)
 	}
 	if child.ParentID == nil || *child.ParentID != root.ID {
 		t.Fatalf("ParentID = %v, want %d", child.ParentID, root.ID)
 	}
 
-	// Omonima allo stesso livello: rifiutata, anche cambiando le maiuscole.
-	if _, err := st.CreateFolder("Progetti", nil); !errors.Is(err, ErrFolderExists) {
-		t.Fatalf("creazione omonima: err = %v, want ErrFolderExists", err)
+	// Same name at the same level: rejected, even with different capitalisation.
+	if _, err := st.CreateFolder("Projects", nil); !errors.Is(err, ErrFolderExists) {
+		t.Fatalf("creating same-named folder: err = %v, want ErrFolderExists", err)
 	}
-	// Omonima in un altro livello: ammessa.
-	if _, err := st.CreateFolder("progetti", &root.ID); err != nil {
-		t.Fatalf("creazione omonima in altra cartella: %v", err)
+	// Same name at another level: allowed.
+	if _, err := st.CreateFolder("projects", &root.ID); err != nil {
+		t.Fatalf("creating same-named folder in another folder: %v", err)
 	}
 
 	roots, err := st.ListFolders(nil)
 	if err != nil {
-		t.Fatalf("elenco radici: %v", err)
+		t.Fatalf("listing roots: %v", err)
 	}
 	if len(roots) != 1 || roots[0].ID != root.ID {
-		t.Fatalf("cartelle alla radice = %+v, want solo %d", roots, root.ID)
+		t.Fatalf("folders at the root = %+v, want only %d", roots, root.ID)
 	}
 
 	children, err := st.ListFolders(&root.ID)
 	if err != nil {
-		t.Fatalf("elenco figli: %v", err)
+		t.Fatalf("listing children: %v", err)
 	}
 	if len(children) != 2 {
-		t.Fatalf("sottocartelle = %d, want 2", len(children))
+		t.Fatalf("subfolders = %d, want 2", len(children))
 	}
 }
 
-// TestFolderPath verifica la catena radice -> cartella.
+// TestFolderPath checks the root -> folder chain.
 func TestFolderPath(t *testing.T) {
 	st := newFolderTestStore(t)
 
 	a, err := st.CreateFolder("a", nil)
 	if err != nil {
-		t.Fatalf("creazione a: %v", err)
+		t.Fatalf("creating a: %v", err)
 	}
 	b, err := st.CreateFolder("b", &a.ID)
 	if err != nil {
-		t.Fatalf("creazione b: %v", err)
+		t.Fatalf("creating b: %v", err)
 	}
 	c, err := st.CreateFolder("c", &b.ID)
 	if err != nil {
-		t.Fatalf("creazione c: %v", err)
+		t.Fatalf("creating c: %v", err)
 	}
 
 	path, err := st.FolderPath(&c.ID)
@@ -86,36 +86,36 @@ func TestFolderPath(t *testing.T) {
 		t.Fatalf("FolderPath: %v", err)
 	}
 	if len(path) != 3 || path[0].Name != "a" || path[1].Name != "b" || path[2].Name != "c" {
-		t.Fatalf("percorso = %+v, want a › b › c", path)
+		t.Fatalf("path = %+v, want a › b › c", path)
 	}
 
 	if path, err := st.FolderPath(nil); err != nil || len(path) != 0 {
-		t.Fatalf("FolderPath(nil) = %+v, %v; want vuoto", path, err)
+		t.Fatalf("FolderPath(nil) = %+v, %v; want empty", path, err)
 	}
 }
 
-// TestNotesInFolders verifica che le note restino nella cartella in cui sono
-// create e che il conteggio per cartella sia corretto.
+// TestNotesInFolders checks that notes stay in the folder they were
+// created in, and that the per-folder count is correct.
 func TestNotesInFolders(t *testing.T) {
 	st := newFolderTestStore(t)
 
-	folder, err := st.CreateFolder("idee", nil)
+	folder, err := st.CreateFolder("ideas", nil)
 	if err != nil {
-		t.Fatalf("creazione cartella: %v", err)
+		t.Fatalf("creating folder: %v", err)
 	}
-	if _, err := st.CreateIn("dentro", &folder.ID); err != nil {
-		t.Fatalf("creazione nota nella cartella: %v", err)
+	if _, err := st.CreateIn("inside", &folder.ID); err != nil {
+		t.Fatalf("creating note in the folder: %v", err)
 	}
-	if _, err := st.Create("fuori"); err != nil {
-		t.Fatalf("creazione nota alla radice: %v", err)
+	if _, err := st.Create("outside"); err != nil {
+		t.Fatalf("creating note at the root: %v", err)
 	}
 
 	inFolder, err := st.ListIn(&folder.ID, false, false)
 	if err != nil {
-		t.Fatalf("elenco cartella: %v", err)
+		t.Fatalf("listing folder: %v", err)
 	}
-	if len(inFolder) != 1 || inFolder[0].Title != "dentro" {
-		t.Fatalf("note nella cartella = %+v, want solo \"dentro\"", inFolder)
+	if len(inFolder) != 1 || inFolder[0].Title != "inside" {
+		t.Fatalf("notes in the folder = %+v, want only \"inside\"", inFolder)
 	}
 	if inFolder[0].FolderID == nil || *inFolder[0].FolderID != folder.ID {
 		t.Errorf("FolderID = %v, want %d", inFolder[0].FolderID, folder.ID)
@@ -123,45 +123,45 @@ func TestNotesInFolders(t *testing.T) {
 
 	atRoot, err := st.ListIn(nil, false, false)
 	if err != nil {
-		t.Fatalf("elenco radice: %v", err)
+		t.Fatalf("listing root: %v", err)
 	}
-	if len(atRoot) != 1 || atRoot[0].Title != "fuori" {
-		t.Fatalf("note alla radice = %+v, want solo \"fuori\"", atRoot)
+	if len(atRoot) != 1 || atRoot[0].Title != "outside" {
+		t.Fatalf("notes at the root = %+v, want only \"outside\"", atRoot)
 	}
 
 	if n, err := st.CountNotes(&folder.ID); err != nil || n != 1 {
-		t.Errorf("CountNotes(cartella) = %d, %v; want 1", n, err)
+		t.Errorf("CountNotes(folder) = %d, %v; want 1", n, err)
 	}
 	if n, err := st.CountNotes(nil); err != nil || n != 1 {
-		t.Errorf("CountNotes(radice) = %d, %v; want 1", n, err)
+		t.Errorf("CountNotes(root) = %d, %v; want 1", n, err)
 	}
 
-	// List resta l'elenco completo, di qualunque cartella.
+	// List remains the complete list, from any folder.
 	all, err := st.List(false)
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
 	if len(all) != 2 {
-		t.Errorf("List(false) = %d note, want 2", len(all))
+		t.Errorf("List(false) = %d notes, want 2", len(all))
 	}
 }
 
-// TestSoftDeleteFolder verifica che cestinare una cartella porti nel cestino
-// anche le sottocartelle e le note contenute.
+// TestSoftDeleteFolder checks that trashing a folder also sends to the trash
+// its subfolders and the notes it contains.
 func TestSoftDeleteFolder(t *testing.T) {
 	st := newFolderTestStore(t)
 
 	parent, err := st.CreateFolder("parent", nil)
 	if err != nil {
-		t.Fatalf("creazione parent: %v", err)
+		t.Fatalf("creating parent: %v", err)
 	}
 	child, err := st.CreateFolder("child", &parent.ID)
 	if err != nil {
-		t.Fatalf("creazione child: %v", err)
+		t.Fatalf("creating child: %v", err)
 	}
-	noteInChild, err := st.CreateIn("dentro", &child.ID)
+	noteInChild, err := st.CreateIn("inside", &child.ID)
 	if err != nil {
-		t.Fatalf("creazione nota: %v", err)
+		t.Fatalf("creating note: %v", err)
 	}
 
 	if err := st.SoftDeleteFolder(parent.ID); err != nil {
@@ -169,21 +169,21 @@ func TestSoftDeleteFolder(t *testing.T) {
 	}
 
 	if roots, err := st.ListFolders(nil); err != nil || len(roots) != 0 {
-		t.Fatalf("cartelle attive = %+v, %v; want nessuna", roots, err)
+		t.Fatalf("active folders = %+v, %v; want none", roots, err)
 	}
 	if notes, err := st.ListIn(nil, false, true); err != nil || len(notes) != 0 {
-		t.Fatalf("note attive = %+v, %v; want nessuna", notes, err)
+		t.Fatalf("active notes = %+v, %v; want none", notes, err)
 	}
 	trash, err := st.ListIn(nil, true, true)
 	if err != nil {
-		t.Fatalf("elenco cestino: %v", err)
+		t.Fatalf("listing trash: %v", err)
 	}
 	if len(trash) != 1 || trash[0].ID != noteInChild.ID {
-		t.Fatalf("note nel cestino = %+v, want la nota %d", trash, noteInChild.ID)
+		t.Fatalf("notes in the trash = %+v, want note %d", trash, noteInChild.ID)
 	}
 
-	// Ripristinare la nota la riporta alla radice: la sua cartella è nel cestino,
-	// quindi altrimenti sarebbe attiva ma invisibile.
+	// Restoring the note brings it back to the root: its folder is in the trash,
+	// so otherwise it would be active but invisible.
 	if err := st.Restore(noteInChild.ID); err != nil {
 		t.Fatalf("Restore: %v", err)
 	}
@@ -192,82 +192,82 @@ func TestSoftDeleteFolder(t *testing.T) {
 		t.Fatalf("Get: %v", err)
 	}
 	if n.FolderID != nil {
-		t.Errorf("FolderID dopo il ripristino = %v, want nil (radice)", n.FolderID)
+		t.Errorf("FolderID after restoring = %v, want nil (root)", n.FolderID)
 	}
 	if notes, err := st.ListIn(nil, false, false); err != nil || len(notes) != 1 {
-		t.Errorf("note attive alla radice = %+v, %v; want la nota ripristinata", notes, err)
+		t.Errorf("active notes at the root = %+v, %v; want the restored note", notes, err)
 	}
 }
 
-// TestRenameFolder verifica la rinomina e l'unicità per livello.
+// TestRenameFolder checks renaming and uniqueness per level.
 func TestRenameFolder(t *testing.T) {
 	st := newFolderTestStore(t)
 
 	a, err := st.CreateFolder("a", nil)
 	if err != nil {
-		t.Fatalf("creazione a: %v", err)
+		t.Fatalf("creating a: %v", err)
 	}
 	if _, err := st.CreateFolder("b", nil); err != nil {
-		t.Fatalf("creazione b: %v", err)
+		t.Fatalf("creating b: %v", err)
 	}
 	if err := st.RenameFolder(a.ID, "b"); !errors.Is(err, ErrFolderExists) {
-		t.Fatalf("rinomina in un nome esistente: err = %v, want ErrFolderExists", err)
+		t.Fatalf("renaming to an existing name: err = %v, want ErrFolderExists", err)
 	}
 	if err := st.RenameFolder(a.ID, "c"); err != nil {
-		t.Fatalf("rinomina: %v", err)
+		t.Fatalf("renaming: %v", err)
 	}
 	f, err := st.GetFolder(a.ID)
 	if err != nil {
 		t.Fatalf("GetFolder: %v", err)
 	}
 	if f.Name != "c" {
-		t.Errorf("nome dopo la rinomina = %q, want \"c\"", f.Name)
+		t.Errorf("name after renaming = %q, want \"c\"", f.Name)
 	}
 }
 
-// TestMigrateFromVersion1 verifica che un database creato dalla versione
-// precedente (senza cartelle) venga aggiornato senza perdere le note.
+// TestMigrateFromVersion1 checks that a database created by the previous
+// version (without folders) is upgraded without losing notes.
 func TestMigrateFromVersion1(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "vecchio.db")
+	path := filepath.Join(t.TempDir(), "old.db")
 
-	// Database v1: solo la tabella delle note, con una nota dentro.
+	// v1 database: only the notes table, with one note in it.
 	old, err := openRaw(path)
 	if err != nil {
-		t.Fatalf("apertura database vecchio: %v", err)
+		t.Fatalf("opening old database: %v", err)
 	}
 	if _, err := old.Exec(createTableSQL); err != nil {
-		t.Fatalf("creazione tabella note: %v", err)
+		t.Fatalf("creating notes table: %v", err)
 	}
 	if _, err := old.Exec(
-		"INSERT INTO notes (title, body, created_at, updated_at) VALUES ('antica', 'ciao', ?, ?)",
+		"INSERT INTO notes (title, body, created_at, updated_at) VALUES ('ancient', 'hello', ?, ?)",
 		"2024-01-01T00:00:00Z", "2024-01-01T00:00:00Z",
 	); err != nil {
-		t.Fatalf("inserimento nota: %v", err)
+		t.Fatalf("inserting note: %v", err)
 	}
 	if _, err := old.Exec("PRAGMA user_version = 1"); err != nil {
-		t.Fatalf("versione schema: %v", err)
+		t.Fatalf("schema version: %v", err)
 	}
 	old.Close()
 
 	st, err := Open(path)
 	if err != nil {
-		t.Fatalf("apertura store migrato: %v", err)
+		t.Fatalf("opening migrated store: %v", err)
 	}
 	t.Cleanup(func() { st.Close() })
 
 	notes, err := st.List(false)
 	if err != nil {
-		t.Fatalf("elenco note: %v", err)
+		t.Fatalf("listing notes: %v", err)
 	}
-	if len(notes) != 1 || notes[0].Title != "antica" {
-		t.Fatalf("note dopo la migrazione = %+v, want la nota \"antica\"", notes)
+	if len(notes) != 1 || notes[0].Title != "ancient" {
+		t.Fatalf("notes after migration = %+v, want the note \"ancient\"", notes)
 	}
 	if notes[0].FolderID != nil {
-		t.Errorf("FolderID della nota migrata = %v, want nil", notes[0].FolderID)
+		t.Errorf("FolderID of the migrated note = %v, want nil", notes[0].FolderID)
 	}
 
-	// E le cartelle ora funzionano.
-	if _, err := st.CreateFolder("nuova", nil); err != nil {
-		t.Fatalf("creazione cartella dopo la migrazione: %v", err)
+	// And folders now work.
+	if _, err := st.CreateFolder("new", nil); err != nil {
+		t.Fatalf("creating folder after migration: %v", err)
 	}
 }

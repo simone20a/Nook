@@ -1,4 +1,4 @@
-// Package app contiene le schermate dell'applicazione Nook.
+// Package app contains the screens of the Nook application.
 package app
 
 import (
@@ -10,15 +10,15 @@ import (
 	"nook/internal/store"
 )
 
-// appName è il nome dell'applicazione, usato nel titolo della finestra quando
-// la schermata attiva è la lista.
+// appName is the name of the application, used in the window title when
+// the active screen is the list.
 const appName = "Nook"
 
-// dirtyMark precede il titolo della nota nel titolo della finestra quando
-// l'editor attivo ha modifiche non salvate.
+// dirtyMark precedes the note title in the window title when
+// the active editor has unsaved changes.
 const dirtyMark = "● "
 
-// screen identifica la schermata attiva.
+// screen identifies the active screen.
 type screen int
 
 const (
@@ -26,7 +26,7 @@ const (
 	screenEditor
 )
 
-// listAction è l'azione richiesta dalla schermata lista al modello radice.
+// listAction is the action requested by the list screen from the root model.
 type listAction int
 
 const (
@@ -35,7 +35,7 @@ const (
 	listQuit
 )
 
-// editorAction è l'azione richiesta dalla schermata editor al modello radice.
+// editorAction is the action requested by the editor screen from the root model.
 type editorAction int
 
 const (
@@ -43,7 +43,7 @@ const (
 	edBackToList
 )
 
-// Model è il modello radice dell'applicazione.
+// Model is the root model of the application.
 type Model struct {
 	st       *store.Store
 	screen   screen
@@ -54,7 +54,7 @@ type Model struct {
 	height   int
 }
 
-// New crea il modello radice con la lista delle note già caricata.
+// New creates the root model with the list of notes already loaded.
 func New(st *store.Store) Model {
 	m := Model{st: st, screen: screenList, width: 80, height: 24}
 	m.list = newListScreen(st, 80, 24)
@@ -63,12 +63,12 @@ func New(st *store.Store) Model {
 	return m
 }
 
-// Init imposta il titolo iniziale della finestra e non esegue altro.
+// Init sets the initial window title and does nothing else.
 func (m Model) Init() tea.Cmd { return m.titleCmd() }
 
-// Update gestisce i messaggi: i tasti vanno prima all'aiuto e alle uscite, poi
-// alla schermata attiva; ogni altro messaggio (i tick dei toast) viene
-// propagato alla schermata attiva, che lo converte nel comando che la riguarda.
+// Update handles messages: keys go first to help and to the exits, then
+// to the active screen; every other message (the toast ticks) is
+// propagated to the active screen, which turns it into the command that concerns it.
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	logMsg(msg)
 	switch msg := msg.(type) {
@@ -82,22 +82,22 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if quit {
 			return model, tea.Quit
 		}
-		// Il titolo va riemesso dopo ogni tasto: Dirty può essere cambiato.
+		// The title has to be re-emitted after every key: Dirty may have changed.
 		return model, tea.Batch(cmd, model.titleCmd())
 	}
 	model, cmd := m.updateScreen(msg)
 	return model, cmd
 }
 
-// updateKey gestisce un tasto a livello di applicazione. Il terzo valore dice
-// se l'applicazione deve uscire.
+// updateKey handles a key at application level. The third value says
+// whether the application must quit.
 func (m Model) updateKey(keyMsg tea.KeyMsg) (Model, tea.Cmd, bool) {
 	logKey(keyMsg)
 
 	key := keyMsg.String()
 
-	// L'aiuto è un popup sopra la schermata corrente: ctrl+_ / f1 lo aprono e lo
-	// chiudono, e qualsiasi altro tasto lo chiude senza arrivare alla schermata.
+	// Help is a popup over the current screen: ctrl+_ / f1 open and close it,
+	// and any other key closes it without reaching the screen.
 	if m.helpOpen {
 		m.helpOpen = false
 		return m, nil, false
@@ -108,15 +108,15 @@ func (m Model) updateKey(keyMsg tea.KeyMsg) (Model, tea.Cmd, bool) {
 		return m, nil, false
 	}
 
-	// Solo ctrl+c esce subito: ctrl+q arriva alla schermata attiva, dove
-	// nell'editor apre il popup di salvataggio e nella lista è gestito dalla lista.
+	// Only ctrl+c quits immediately: ctrl+q reaches the active screen, where
+	// in the editor it opens the save popup and in the list it is handled by the list.
 	if key == "ctrl+c" {
 		return m, nil, true
 	}
 
-	// "?" apre l'aiuto dalla lista, ma solo quando non si sta digitando in un
-	// campo input: con modeNormal il ? è un tasto di comando, negli altri modi
-	// è testo e deve arrivare alla lista.
+	// "?" opens help from the list, but only when not typing in an input
+	// field: in modeNormal ? is a command key, in the other modes
+	// it is text and must reach the list.
 	if m.screen == screenList && m.list.mode == modeNormal && key == "?" {
 		m.helpOpen = true
 		return m, nil, false
@@ -138,10 +138,10 @@ func (m Model) updateKey(keyMsg tea.KeyMsg) (Model, tea.Cmd, bool) {
 	return m, cmd, false
 }
 
-// applyListAction esegue l'azione che la lista ha richiesto al modello radice:
-// l'uscita o l'apertura della nota selezionata. La usano sia i tasti sia il
-// mouse, che impostano lo stesso listAction. Il terzo valore dice se
-// l'applicazione deve uscire.
+// applyListAction performs the action that the list requested from the root model:
+// quitting or opening the selected note. Both keys and the
+// mouse use it, setting the same listAction. The third value says whether
+// the application must quit.
 func (m Model) applyListAction(cmd tea.Cmd) (Model, tea.Cmd, bool) {
 	switch m.list.action {
 	case listQuit:
@@ -152,8 +152,8 @@ func (m Model) applyListAction(cmd tea.Cmd) (Model, tea.Cmd, bool) {
 		m.list.action = listNone
 		note, err := m.st.Get(id)
 		if err != nil {
-			// L'errore diventa un toast della lista, con il suo tick.
-			m.list = m.list.showToast("errore: " + err.Error())
+			// The error becomes a toast of the list, with its tick.
+			m.list = m.list.showToast("error: " + err.Error())
 			return m, tea.Batch(cmd, listToastTickCmd()), false
 		}
 		m.editor = newEditorScreen(m.st, note, m.width, m.height)
@@ -162,9 +162,9 @@ func (m Model) applyListAction(cmd tea.Cmd) (Model, tea.Cmd, bool) {
 	return m, cmd, false
 }
 
-// updateScreen inoltra alla schermata attiva i messaggi che non sono tasti:
-// i tea.Tick dei toast, che la schermata trasforma nel comando opportuno, e il
-// mouse della lista, che può chiedere di aprire una nota o di uscire.
+// updateScreen forwards to the active screen the messages that are not keys:
+// the toast tea.Ticks, which the screen turns into the appropriate command, and the
+// mouse of the list, which may ask to open a note or to quit.
 func (m Model) updateScreen(msg tea.Msg) (Model, tea.Cmd) {
 	switch m.screen {
 	case screenList:
@@ -183,15 +183,15 @@ func (m Model) updateScreen(msg tea.Msg) (Model, tea.Cmd) {
 	return m, nil
 }
 
-// isHelpKey indica i tasti che aprono e chiudono l'aiuto: ctrl+_ (che il
-// terminale recapita come "ctrl+/") e f1.
+// isHelpKey identifies the keys that open and close help: ctrl+_ (which the
+// terminal delivers as "ctrl+/") and f1.
 func isHelpKey(key string) bool {
 	return key == "ctrl+/" || key == "ctrl+_" || key == "f1"
 }
 
-// windowTitle è il titolo della finestra: con l'editor attivo è il titolo della
-// nota, preceduto da "●" quando ci sono modifiche non salvate; nella lista è il
-// nome dell'applicazione.
+// windowTitle is the window title: with the editor active it is the title of the
+// note, preceded by "●" when there are unsaved changes; in the list it is the
+// name of the application.
 func (m Model) windowTitle() string {
 	if m.screen == screenEditor {
 		if m.editor.Dirty() {
@@ -202,21 +202,21 @@ func (m Model) windowTitle() string {
 	return appName
 }
 
-// titleCmd restituisce il comando che imposta il titolo della finestra.
+// titleCmd returns the command that sets the window title.
 func (m Model) titleCmd() tea.Cmd { return tea.SetWindowTitle(m.windowTitle()) }
 
-// helpText è il testo breve dell'aiuto: i principali shortcut di sistema, di
-// formattazione e di testo, il mouse e i comandi della lista.
-const helpText = "Sistema: F2 salva · F3 formatta · F1 aiuto · ctrl+c esci subito\n" +
-	"Formattazione: F3 apre la palette (frecce+invio) · ctrl+t poi b i s k u x l q h 0 · il markdown si può scrivere direttamente\n" +
-	"Testo: ctrl+left/right o alt+left/right per parola · alt+backspace cancella parola · ctrl+u/k a inizio/fine riga\n" +
-	"Selezione: shift+frecce, shift+home/end, shift+ctrl+left/right · col mouse trascina tenendo premuto il tasto sinistro\n" +
-	"Mouse: click posiziona · doppio/triplo click seleziona parola/riga · in lista click seleziona, doppio click apre\n" +
-	"Lista: n nota · c cartella · invio apre · → entra · ← esci · r rinomina · d cestina · u ripristina · o cestino · x elimina · f filtra · q esci"
+// helpText is the short help text: the main system, formatting and
+// text shortcuts, the mouse and the list commands.
+const helpText = "System: F2 save · F3 format · F1 help · ctrl+c quit immediately\n" +
+	"Formatting: F3 opens the palette (arrows+enter) · ctrl+t then b i s k u x l q h 0 · markdown can be typed directly\n" +
+	"Text: ctrl+left/right or alt+left/right by word · alt+backspace deletes word · ctrl+u/k to start/end of line\n" +
+	"Selection: shift+arrows, shift+home/end, shift+ctrl+left/right · with the mouse drag holding the left button\n" +
+	"Mouse: click positions · double/triple click selects word/line · in the list click selects, double click opens\n" +
+	"List: n note · c folder · enter opens · → enters · ← goes up · r rename · d trash · u restore · o trash view · x delete · f filter · q quit"
 
-// renderHelp costruisce il contenuto del popup di aiuto: il testo degli
-// shortcut, reso riga per riga dentro lo spazio del popup e poi centrato da
-// centerPopup sopra la schermata corrente.
+// renderHelp builds the content of the help popup: the text of the
+// shortcuts, rendered line by line inside the popup space and then centred by
+// centerPopup over the current screen.
 func renderHelp(w, h int) string {
 	lines := strings.Split(helpText, "\n")
 	if limit := maxPopupH(h); len(lines) > limit {
@@ -229,8 +229,8 @@ func renderHelp(w, h int) string {
 	return strings.Join(lines, "\n")
 }
 
-// View rende la schermata attiva; con l'aiuto aperto la schermata resta
-// visibile e sopra di essa viene sovrapposto il popup centrato dell'aiuto.
+// View renders the active screen; with help open the screen stays
+// visible and the centred help popup is overlaid on top of it.
 func (m Model) View() string {
 	var base string
 	switch m.screen {
@@ -250,8 +250,8 @@ func (m Model) View() string {
 	return withMargins(content, m.width, m.height)
 }
 
-// contentOnly riporta una view totale (margini compresi) all'area contenuto:
-// contentH(h) righe di contentW(w) colonne, pronte per centerPopup.
+// contentOnly brings a total view (margins included) back to the content area:
+// contentH(h) rows of contentW(w) columns, ready for centerPopup.
 func contentOnly(view string, w, h int) string {
 	cw, ch := contentW(w), contentH(h)
 	if cw <= 0 || ch <= 0 {

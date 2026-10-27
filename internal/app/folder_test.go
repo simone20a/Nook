@@ -9,82 +9,82 @@ import (
 	"nook/internal/store"
 )
 
-// newFolderTestStore apre lo store su una directory temporanea del test.
+// newFolderTestStore opens the store in a temporary directory of the test.
 func newFolderTestStore(t *testing.T) *store.Store {
 	return newKeysTestStore(t)
 }
 
-// TestFolderNavigation verifica che le cartelle compaiano nella lista, che la
-// freccia destra (e invio) ci entrino dentro e che la freccia sinistra (e esc)
-// risalgano al livello superiore.
+// TestFolderNavigation checks that folders appear in the list, that the
+// right arrow (and enter) enter them and that the left arrow (and esc)
+// go up to the upper level.
 func TestFolderNavigation(t *testing.T) {
 	st := newFolderTestStore(t)
-	folder, err := st.CreateFolder("progetti", nil)
+	folder, err := st.CreateFolder("projects", nil)
 	if err != nil {
-		t.Fatalf("creazione cartella: %v", err)
+		t.Fatalf("creating folder: %v", err)
 	}
-	if _, err := st.CreateIn("dentro", &folder.ID); err != nil {
-		t.Fatalf("creazione nota nella cartella: %v", err)
+	if _, err := st.CreateIn("inside", &folder.ID); err != nil {
+		t.Fatalf("creating note in the folder: %v", err)
 	}
-	if _, err := st.Create("fuori"); err != nil {
-		t.Fatalf("creazione nota alla radice: %v", err)
+	if _, err := st.Create("outside"); err != nil {
+		t.Fatalf("creating note at the root: %v", err)
 	}
 
 	s := newListScreen(st, 80, 24)
 	s.load()
 
-	// Alla radice: una cartella e una nota.
+	// At the root: one folder and one note.
 	if got := len(s.folders); got != 1 {
-		t.Fatalf("cartelle alla radice = %d, want 1", got)
+		t.Fatalf("folders at the root = %d, want 1", got)
 	}
-	if got := len(s.notes); got != 1 || s.notes[0].Title != "fuori" {
-		t.Fatalf("note alla radice = %+v, want la sola \"fuori\"", s.notes)
+	if got := len(s.notes); got != 1 || s.notes[0].Title != "outside" {
+		t.Fatalf("notes at the root = %+v, want only \"outside\"", s.notes)
 	}
 
-	// La prima voce è la cartella: freccia destra ci entra.
+	// The first entry is the folder: the right arrow enters it.
 	s.selected = 0
 	s, _ = s.updateKey(tea.KeyMsg{Type: tea.KeyRight})
 	if s.folderID == nil || *s.folderID != folder.ID {
-		t.Fatalf("folderID dopo → = %v, want %d", s.folderID, folder.ID)
+		t.Fatalf("folderID after → = %v, want %d", s.folderID, folder.ID)
 	}
-	if len(s.path) != 1 || s.path[0].Name != "progetti" {
-		t.Fatalf("percorso dopo → = %+v, want [progetti]", s.path)
+	if len(s.path) != 1 || s.path[0].Name != "projects" {
+		t.Fatalf("path after → = %+v, want [projects]", s.path)
 	}
 	if len(s.folders) != 0 {
-		t.Errorf("cartelle dentro la cartella = %d, want 0", len(s.folders))
+		t.Errorf("folders inside the folder = %d, want 0", len(s.folders))
 	}
-	if len(s.notes) != 1 || s.notes[0].Title != "dentro" {
-		t.Fatalf("note dentro la cartella = %+v, want la sola \"dentro\"", s.notes)
+	if len(s.notes) != 1 || s.notes[0].Title != "inside" {
+		t.Fatalf("notes inside the folder = %+v, want only \"inside\"", s.notes)
 	}
 
-	// Freccia sinistra: si torna alla radice.
+	// Left arrow: back to the root.
 	s, _ = s.updateKey(tea.KeyMsg{Type: tea.KeyLeft})
 	if s.folderID != nil || len(s.path) != 0 {
-		t.Fatalf("dopo ← folderID = %v, path = %+v; want radice", s.folderID, s.path)
+		t.Fatalf("after ← folderID = %v, path = %+v; want root", s.folderID, s.path)
 	}
 	if len(s.folders) != 1 || len(s.notes) != 1 {
-		t.Errorf("alla radice: %d cartelle e %d note, want 1 e 1", len(s.folders), len(s.notes))
+		t.Errorf("at the root: %d folders and %d notes, want 1 and 1", len(s.folders), len(s.notes))
 	}
 
-	// Invio sulla cartella ci entra, esc ne esce.
+	// Enter on the folder enters it, esc leaves it.
 	s.selected = 0
 	s, _ = s.updateKey(tea.KeyMsg{Type: tea.KeyEnter})
 	if s.folderID == nil {
-		t.Fatal("invio sulla cartella non è entrato")
+		t.Fatal("enter on the folder did not enter it")
 	}
 	s, _ = s.updateKey(tea.KeyMsg{Type: tea.KeyEsc})
 	if s.folderID != nil {
-		t.Fatal("esc non è risalito alla radice")
+		t.Fatal("esc did not go back up to the root")
 	}
 }
 
-// TestEnterOnNoteOpensEditor verifica che invio su una nota chieda l'apertura
-// dell'editor, mentre la freccia destra su una nota non fa nulla.
+// TestEnterOnNoteOpensEditor checks that enter on a note requests opening
+// of the editor, while the right arrow on a note does nothing.
 func TestEnterOnNoteOpensEditor(t *testing.T) {
 	st := newFolderTestStore(t)
-	note, err := st.Create("nota")
+	note, err := st.Create("note")
 	if err != nil {
-		t.Fatalf("creazione nota: %v", err)
+		t.Fatalf("creating note: %v", err)
 	}
 
 	s := newListScreen(st, 80, 24)
@@ -92,17 +92,17 @@ func TestEnterOnNoteOpensEditor(t *testing.T) {
 
 	s, _ = s.updateKey(tea.KeyMsg{Type: tea.KeyRight})
 	if s.action == listOpen {
-		t.Error("→ su una nota ha aperto l'editor, want nessuna azione")
+		t.Error("→ on a note opened the editor, want no action")
 	}
 
 	s, _ = s.updateKey(tea.KeyMsg{Type: tea.KeyEnter})
 	if s.action != listOpen || s.actionID != note.ID {
-		t.Errorf("invio sulla nota: action = %v, id = %d; want listOpen su %d", s.action, s.actionID, note.ID)
+		t.Errorf("enter on the note: action = %v, id = %d; want listOpen on %d", s.action, s.actionID, note.ID)
 	}
 }
 
-// TestCreateFolderKey verifica che "c" apra il popup della cartella e che invio
-// la crei nel livello corrente, senza aprire l'editor.
+// TestCreateFolderKey checks that "c" opens the folder popup and that enter
+// creates it at the current level, without opening the editor.
 func TestCreateFolderKey(t *testing.T) {
 	st := newFolderTestStore(t)
 
@@ -112,31 +112,31 @@ func TestCreateFolderKey(t *testing.T) {
 
 	m, _, _ = m.updateKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("c")})
 	if m.list.mode != modeInputNewFolder {
-		t.Fatalf("mode dopo \"c\" = %v, want modeInputNewFolder", m.list.mode)
+		t.Fatalf("mode after \"c\" = %v, want modeInputNewFolder", m.list.mode)
 	}
-	m, _, _ = m.updateKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("idee")})
+	m, _, _ = m.updateKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("ideas")})
 	m, _, quit := m.updateKey(tea.KeyMsg{Type: tea.KeyEnter})
 	if quit {
-		t.Fatal("quit = true dopo invio, want false")
+		t.Fatal("quit = true after enter, want false")
 	}
 	if m.screen != screenList {
 		t.Errorf("screen = %v, want screenList", m.screen)
 	}
-	if len(m.list.folders) != 1 || m.list.folders[0].Name != "idee" {
-		t.Fatalf("cartelle = %+v, want la cartella \"idee\"", m.list.folders)
+	if len(m.list.folders) != 1 || m.list.folders[0].Name != "ideas" {
+		t.Fatalf("folders = %+v, want the folder \"ideas\"", m.list.folders)
 	}
-	if e, ok := m.list.currentEntry(); !ok || e.kind != entryFolder || e.title != "idee/" {
-		t.Errorf("voce selezionata = %+v, want la cartella \"idee/\"", e)
+	if e, ok := m.list.currentEntry(); !ok || e.kind != entryFolder || e.title != "ideas/" {
+		t.Errorf("selected entry = %+v, want the folder \"ideas/\"", e)
 	}
 }
 
-// TestNewNoteGoesIntoCurrentFolder verifica che una nota creata dentro una
-// cartella resti lì.
+// TestNewNoteGoesIntoCurrentFolder checks that a note created inside a
+// folder stays there.
 func TestNewNoteGoesIntoCurrentFolder(t *testing.T) {
 	st := newFolderTestStore(t)
-	folder, err := st.CreateFolder("progetti", nil)
+	folder, err := st.CreateFolder("projects", nil)
 	if err != nil {
-		t.Fatalf("creazione cartella: %v", err)
+		t.Fatalf("creating folder: %v", err)
 	}
 
 	s := newListScreen(st, 80, 24)
@@ -144,15 +144,15 @@ func TestNewNoteGoesIntoCurrentFolder(t *testing.T) {
 	s.selected = 0
 	s, _ = s.updateKey(tea.KeyMsg{Type: tea.KeyRight})
 	if s.folderID == nil {
-		t.Fatal("non è entrato nella cartella")
+		t.Fatal("did not enter the folder")
 	}
 
 	s, _ = s.updateKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("n")})
-	s, _ = s.updateKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("interna")})
+	s, _ = s.updateKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("inner")})
 	s, _ = s.updateKey(tea.KeyMsg{Type: tea.KeyEnter})
 
-	if len(s.notes) != 1 || s.notes[0].Title != "interna" {
-		t.Fatalf("note nella cartella = %+v, want la sola \"interna\"", s.notes)
+	if len(s.notes) != 1 || s.notes[0].Title != "inner" {
+		t.Fatalf("notes in the folder = %+v, want only \"inner\"", s.notes)
 	}
 	got, err := st.Get(s.notes[0].ID)
 	if err != nil {
@@ -163,97 +163,97 @@ func TestNewNoteGoesIntoCurrentFolder(t *testing.T) {
 	}
 }
 
-// TestDeleteFolderTrashesContent verifica che cestinando una cartella si porti
-// nel cestino il suo contenuto e che la vista cestino la mostri come nota.
+// TestDeleteFolderTrashesContent checks that trashing a folder sends its contents
+// to the trash and that the trash view shows it as a note.
 func TestDeleteFolderTrashesContent(t *testing.T) {
 	st := newFolderTestStore(t)
-	folder, err := st.CreateFolder("progetti", nil)
+	folder, err := st.CreateFolder("projects", nil)
 	if err != nil {
-		t.Fatalf("creazione cartella: %v", err)
+		t.Fatalf("creating folder: %v", err)
 	}
-	note, err := st.CreateIn("dentro", &folder.ID)
+	note, err := st.CreateIn("inside", &folder.ID)
 	if err != nil {
-		t.Fatalf("creazione nota: %v", err)
+		t.Fatalf("creating note: %v", err)
 	}
 
 	s := newListScreen(st, 80, 24)
 	s.load()
 	s.selected = 0
 
-	// "d" chiede conferma, "s" conferma.
+	// "d" asks for confirmation, "y" confirms.
 	s, _ = s.updateKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("d")})
 	if s.mode != modeConfirmSoftDelete {
-		t.Fatalf("mode dopo \"d\" = %v, want modeConfirmSoftDelete", s.mode)
+		t.Fatalf("mode after \"d\" = %v, want modeConfirmSoftDelete", s.mode)
 	}
 	box := s.boxConfirm()
-	if !strings.Contains(box, "cartella") {
-		t.Errorf("la conferma non parla di cartella: %q", box)
+	if !strings.Contains(box, "folder") {
+		t.Errorf("the confirmation does not mention a folder: %q", box)
 	}
-	s, _ = s.updateKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("s")})
+	s, _ = s.updateKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("y")})
 
 	if len(s.folders) != 0 || len(s.notes) != 0 {
-		t.Fatalf("dopo la cancellazione: %d cartelle, %d note; want 0 e 0", len(s.folders), len(s.notes))
+		t.Fatalf("after deletion: %d folders, %d notes; want 0 and 0", len(s.folders), len(s.notes))
 	}
 
-	// Nel cestino compare la nota che era dentro.
+	// The note that was inside appears in the trash.
 	s, _ = s.updateKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("o")})
 	if !s.showTrash {
-		t.Fatal("non è passato al cestino")
+		t.Fatal("did not switch to the trash")
 	}
 	if len(s.notes) != 1 || s.notes[0].ID != note.ID {
-		t.Fatalf("note nel cestino = %+v, want la nota %d", s.notes, note.ID)
+		t.Fatalf("notes in the trash = %+v, want note %d", s.notes, note.ID)
 	}
 }
 
-// TestListTitleBreadcrumb verifica il titolo della lista: NOTE alla radice e il
-// percorso quando si scende in una cartella.
+// TestListTitleBreadcrumb checks the list title: NOTES at the root and the
+// path when descending into a folder.
 func TestListTitleBreadcrumb(t *testing.T) {
 	st := newFolderTestStore(t)
-	root, err := st.CreateFolder("progetti", nil)
+	root, err := st.CreateFolder("projects", nil)
 	if err != nil {
-		t.Fatalf("creazione cartella: %v", err)
+		t.Fatalf("creating folder: %v", err)
 	}
 	child, err := st.CreateFolder("2026", &root.ID)
 	if err != nil {
-		t.Fatalf("creazione sottocartella: %v", err)
+		t.Fatalf("creating subfolder: %v", err)
 	}
 
 	s := newListScreen(st, 80, 24)
 	s.load()
 
-	if got := strings.TrimSpace(s.listTitle(60)); got != "NOTE" {
-		t.Errorf("titolo alla radice = %q, want \"NOTE\"", got)
+	if got := strings.TrimSpace(s.listTitle(60)); got != "NOTES" {
+		t.Errorf("title at the root = %q, want \"NOTES\"", got)
 	}
 
 	s = s.enterFolder(root.ID)
-	if got := strings.TrimSpace(s.listTitle(60)); got != "NOTE › progetti" {
-		t.Errorf("titolo dentro la cartella = %q, want \"NOTE › progetti\"", got)
+	if got := strings.TrimSpace(s.listTitle(60)); got != "NOTES › projects" {
+		t.Errorf("title inside the folder = %q, want \"NOTES › projects\"", got)
 	}
 
 	s = s.enterFolder(child.ID)
-	if got := strings.TrimSpace(s.listTitle(60)); got != "NOTE › progetti › 2026" {
-		t.Errorf("titolo nella sottocartella = %q, want il percorso completo", got)
+	if got := strings.TrimSpace(s.listTitle(60)); got != "NOTES › projects › 2026" {
+		t.Errorf("title in the subfolder = %q, want the full path", got)
 	}
 
 	s.showTrash = true
-	if got := strings.TrimSpace(s.listTitle(60)); got != "CESTINO" {
-		t.Errorf("titolo nel cestino = %q, want \"CESTINO\"", got)
+	if got := strings.TrimSpace(s.listTitle(60)); got != "TRASH" {
+		t.Errorf("title in the trash = %q, want \"TRASH\"", got)
 	}
 }
 
-// TestFolderEntryDetail verifica la riga di dettaglio delle cartelle.
+// TestFolderEntryDetail checks the detail row of folders.
 func TestFolderEntryDetail(t *testing.T) {
 	st := newFolderTestStore(t)
-	empty, err := st.CreateFolder("vuota", nil)
+	empty, err := st.CreateFolder("blank", nil)
 	if err != nil {
-		t.Fatalf("creazione cartella vuota: %v", err)
+		t.Fatalf("creating empty folder: %v", err)
 	}
-	one, err := st.CreateFolder("una", nil)
+	one, err := st.CreateFolder("single", nil)
 	if err != nil {
-		t.Fatalf("creazione cartella: %v", err)
+		t.Fatalf("creating folder: %v", err)
 	}
-	if _, err := st.CreateIn("nota", &one.ID); err != nil {
-		t.Fatalf("creazione nota: %v", err)
+	if _, err := st.CreateIn("note", &one.ID); err != nil {
+		t.Fatalf("creating note: %v", err)
 	}
 
 	s := newListScreen(st, 80, 24)
@@ -265,35 +265,35 @@ func TestFolderEntryDetail(t *testing.T) {
 			details[e.id] = e.detail
 		}
 	}
-	if got := details[empty.ID]; got != "vuota" {
-		t.Errorf("dettaglio cartella vuota = %q, want \"vuota\"", got)
+	if got := details[empty.ID]; got != "empty" {
+		t.Errorf("detail of empty folder = %q, want \"empty\"", got)
 	}
-	if got := details[one.ID]; got != "1 nota" {
-		t.Errorf("dettaglio cartella con una nota = %q, want \"1 nota\"", got)
+	if got := details[one.ID]; got != "1 note" {
+		t.Errorf("detail of folder with one note = %q, want \"1 note\"", got)
 	}
 }
 
-// TestNewNoteSelectsItAmongFolders verifica che, creando una nota in una lista
-// che contiene cartelle, la selezione finisca sulla nota nuova e non su una
-// cartella.
+// TestNewNoteSelectsItAmongFolders checks that, creating a note in a list
+// that contains folders, the selection ends up on the new note and not on a
+// folder.
 func TestNewNoteSelectsItAmongFolders(t *testing.T) {
 	st := newFolderTestStore(t)
-	if _, err := st.CreateFolder("cartella", nil); err != nil {
-		t.Fatalf("creazione cartella: %v", err)
+	if _, err := st.CreateFolder("folder", nil); err != nil {
+		t.Fatalf("creating folder: %v", err)
 	}
-	if _, err := st.Create("esistente"); err != nil {
-		t.Fatalf("creazione nota: %v", err)
+	if _, err := st.Create("existing"); err != nil {
+		t.Fatalf("creating note: %v", err)
 	}
 
 	s := newListScreen(st, 80, 24)
 	s.load()
 
 	s, _ = s.updateKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("n")})
-	s, _ = s.updateKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("nuova")})
+	s, _ = s.updateKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("fresh")})
 	s, _ = s.updateKey(tea.KeyMsg{Type: tea.KeyEnter})
 
 	e, ok := s.currentEntry()
-	if !ok || e.kind != entryNote || e.title != "nuova" {
-		t.Fatalf("voce selezionata = %+v, want la nota \"nuova\"", e)
+	if !ok || e.kind != entryNote || e.title != "fresh" {
+		t.Fatalf("selected entry = %+v, want the note \"fresh\"", e)
 	}
 }

@@ -10,97 +10,97 @@ import (
 	"nook/internal/markdown"
 )
 
-// setTrueColorProfile impone al renderer di lipgloss un profilo colore esplicito: in
-// test l'output non è un terminale e il profilo rilevato sarebbe Ascii, con il
-// quale ogni stile renderebbe la stringa vuota e i confronti non direbbero
-// nulla sull'aspetto degli stili.
+// setTrueColorProfile forces an explicit colour profile on the lipgloss renderer: in
+// tests the output is not a terminal and the detected profile would be Ascii, with
+// which every style would render the empty string and the comparisons would say
+// nothing about the appearance of the styles.
 func setTrueColorProfile() {
 	lipgloss.SetColorProfile(termenv.TrueColor)
 }
 
-// TestDimStylesDiffer verifica che ogni stile pieno abbia una resa attenuata
-// diversa: le righe senza focus non devono apparire come quelle in focus.
+// TestDimStylesDiffer checks that every full style has a dimmed rendering
+// that is different: lines without focus must not look like those in focus.
 func TestDimStylesDiffer(t *testing.T) {
 	setTrueColorProfile()
 
 	for k, full := range Styles {
 		dim, ok := DimStyles[k]
 		if !ok {
-			t.Errorf("DimStyles non ha la chiave %v", k)
+			t.Errorf("DimStyles does not have the key %v", k)
 			continue
 		}
 		if dim.Render("x") == full.Render("x") {
-			t.Errorf("DimStyles[%v] e Styles[%v] hanno la stessa resa %q",
+			t.Errorf("DimStyles[%v] e Styles[%v] have the same rendering %q",
 				k, k, full.Render("x"))
 		}
 	}
 }
 
-// TestServiceStyles verifica che gli stili di servizio Rev e Toast producano
-// una resa non vuota.
+// TestServiceStyles checks that the utility styles Rev and Toast produce
+// a non-empty rendering.
 func TestServiceStyles(t *testing.T) {
 	setTrueColorProfile()
 
 	if got := Rev.String(); got == "" {
-		t.Error("Rev.String() = \"\", want resa non vuota")
+		t.Error("Rev.String() = \"\", want non-empty rendering")
 	}
 	if got := Toast.String(); got == "" {
-		t.Error("Toast.String() = \"\", want resa non vuota")
+		t.Error("Toast.String() = \"\", want non-empty rendering")
 	}
 }
 
-// TestFolderStyles verifica che la cartella selezionata non sia sottolineata e
-// che si distingua comunque da quelle non selezionate.
+// TestFolderStyles checks that the selected folder is not underlined and
+// that it still stands out from unselected ones.
 func TestFolderStyles(t *testing.T) {
 	setTrueColorProfile()
 
 	if FolderSel.GetUnderline() {
-		t.Error("FolderSel ha la sottolineatura, want nessuna")
+		t.Error("FolderSel has underlining, want none")
 	}
-	if got, want := FolderSel.Render("cartella/"), FolderDim.Render("cartella/"); got == want {
-		t.Errorf("cartella selezionata e non selezionata hanno la stessa resa: %q", got)
+	if got, want := FolderSel.Render("folder/"), FolderDim.Render("folder/"); got == want {
+		t.Errorf("selected and unselected folder have the same rendering: %q", got)
 	}
 	if !FolderSel.GetBold() {
-		t.Error("FolderSel non è in grassetto")
+		t.Error("FolderSel is not bold")
 	}
 
-	// La resa non deve contenere l'attributo di sottolineatura (SGR 4).
+	// The rendering must not contain the underline attribute (SGR 4).
 	if strings.Contains(FolderSel.Render("x"), "\x1b[4m") {
-		t.Errorf("la resa della cartella selezionata contiene la sottolineatura: %q", FolderSel.Render("x"))
+		t.Errorf("the rendering of the selected folder contains underlining: %q", FolderSel.Render("x"))
 	}
 }
 
-// TestQuoteStyles verifica che il testo della citazione sia in corsivo e che la
-// barra abbia uno stile proprio, distinto dal testo.
+// TestQuoteStyles checks that the quote text is in italics and that the
+// bar has a style of its own, distinct from the text.
 func TestQuoteStyles(t *testing.T) {
 	setTrueColorProfile()
 
 	if !Styles[markdown.StyleQuote].GetItalic() {
-		t.Error("Styles[StyleQuote] non è in corsivo")
+		t.Error("Styles[StyleQuote] is not in italics")
 	}
 	if !DimStyles[markdown.StyleQuote].GetItalic() {
-		t.Error("DimStyles[StyleQuote] non è in corsivo")
+		t.Error("DimStyles[StyleQuote] is not in italics")
 	}
 
-	// La barra è in grassetto e ha una resa diversa dal testo della citazione,
-	// sia piena sia attenuata.
+	// The bar is bold and has a rendering different from the quote text,
+	// both full and dimmed.
 	if !Styles[markdown.StyleQuoteBar].GetBold() {
-		t.Error("Styles[StyleQuoteBar] non è in grassetto")
+		t.Error("Styles[StyleQuoteBar] is not bold")
 	}
 	if got, want := Styles[markdown.StyleQuoteBar].Render("▌"), Styles[markdown.StyleQuote].Render("▌"); got == want {
-		t.Errorf("barra e testo della citazione hanno la stessa resa piena: %q", got)
+		t.Errorf("bar and quote text have the same full rendering: %q", got)
 	}
 	if got, want := DimStyles[markdown.StyleQuoteBar].Render("▌"), DimStyles[markdown.StyleQuote].Render("▌"); got == want {
-		t.Errorf("barra e testo della citazione hanno la stessa resa attenuata: %q", got)
+		t.Errorf("bar and quote text have the same dimmed rendering: %q", got)
 	}
 }
 
-// TestQuoteItalicRendered verifica che l'attributo corsivo (SGR 3) compaia
-// davvero nella resa del testo di citazione.
+// TestQuoteItalicRendered checks that the italic attribute (SGR 3) appears
+// really in the rendering of the quote text.
 func TestQuoteItalicRendered(t *testing.T) {
 	setTrueColorProfile()
 
 	if got := Styles[markdown.StyleQuote].Render("x"); !strings.Contains(got, "\x1b[3") {
-		t.Errorf("la resa del testo di citazione non contiene il corsivo: %q", got)
+		t.Errorf("the rendering of the quote text does not contain italics: %q", got)
 	}
 }

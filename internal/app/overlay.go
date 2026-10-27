@@ -9,7 +9,7 @@ import (
 	"nook/internal/theme"
 )
 
-// Caratteri del bordo dei riquadri sovrapposti: angoli e lati.
+// Border characters of the overlaid boxes: corners and sides.
 const (
 	boxTopLeft     = "┌"
 	boxTopRight    = "┐"
@@ -19,9 +19,9 @@ const (
 	boxVertical    = "│"
 )
 
-// maxPopupW è la larghezza massima del testo di un popup per una larghezza di
-// terminale w: all'area contenuto vanno tolti bordo e padding del riquadro.
-// Restano comunque almeno 10 colonne di testo.
+// maxPopupW is the maximum text width of a popup for a terminal width
+// w: the border and padding of the box have to be subtracted from the content area.
+// There are always at least 10 columns of text left.
 func maxPopupW(w int) int {
 	c := contentW(w) - 4
 	if c < 10 {
@@ -30,9 +30,9 @@ func maxPopupW(w int) int {
 	return c
 }
 
-// maxPopupH è l'altezza massima del testo di un popup per un'altezza di
-// terminale h: all'area contenuto vanno tolti bordo e padding del riquadro.
-// Restano comunque almeno 3 righe di testo.
+// maxPopupH is the maximum text height of a popup for a terminal height
+// h: the border and padding of the box have to be subtracted from the content area.
+// There are always at least 3 rows of text left.
 func maxPopupH(h int) int {
 	c := contentH(h) - 4
 	if c < 3 {
@@ -41,24 +41,24 @@ func maxPopupH(h int) int {
 	return c
 }
 
-// centerPopup centra il riquadro costruito da popup sopra base, sull'area
-// contentW(w) x contentH(h). base deve avere esattamente contentH(h) righe
-// contigue, ciascuna larga contentW(w); le righe non coperte dal riquadro
-// restano invariate.
+// centerPopup centres the box built by popup over base, on the area
+// contentW(w) x contentH(h). base must have exactly contentH(h) contiguous
+// rows, each contentW(w) wide; the rows not covered by the box
+// stay unchanged.
 //
-// Il riquadro viene sempre disegnato: il minimo di 10 colonne e 3 righe
-// garantito da maxPopupW e maxPopupH rende sempre possibile comporre il bordo
-// con il padding, quindi non esiste un'area troppo piccola che giustifichi il
-// ritorno della base invariata (la soglia è già applicata dentro gli helper,
-// non sui valori grezzi di contentW/contentH).
+// The box is always drawn: the minimum of 10 columns and 3 rows
+// guaranteed by maxPopupW and maxPopupH always makes it possible to compose the border
+// with the padding, so there is no area too small that would justify
+// returning the base unchanged (the threshold is already applied inside the helpers,
+// not on the raw values of contentW/contentH).
 func centerPopup(base string, w, h int, popup string) string {
 	cw, ch := contentW(w), contentH(h)
 	rows := splitRows(base, ch)
 
 	lines := strings.Split(popup, "\n")
 
-	// Larghezza interna del riquadro: la riga più lunga del popup, senza
-	// superare maxPopupW(w). Ogni riga viene poi troncata a questa misura.
+	// Inner width of the box: the longest row of the popup, without
+	// exceeding maxPopupW(w). Every row is then truncated to this size.
 	textW := 0
 	for _, l := range lines {
 		if lw := ansi.StringWidth(l); lw > textW {
@@ -69,7 +69,7 @@ func centerPopup(base string, w, h int, popup string) string {
 		textW = limit
 	}
 
-	// Altezza interna del riquadro: le righe del popup, senza superare
+	// Inner height of the box: the rows of the popup, without exceeding
 	// maxPopupH(h).
 	textH := len(lines)
 	if limit := maxPopupH(h); textH > limit {
@@ -104,19 +104,19 @@ func centerPopup(base string, w, h int, popup string) string {
 	return strings.Join(rows, "\n")
 }
 
-// toastStyle sceglie lo stile del toast: quello di errore per i messaggi che
-// cominciano con "errore", quello normale per tutto il resto (conferme come
-// "salvato" o "nota creata").
+// toastStyle chooses the toast style: the error one for messages that
+// start with "error", the normal one for everything else (confirmations like
+// "saved" or "note created").
 func toastStyle(msg string) lipgloss.Style {
-	if strings.HasPrefix(msg, "errore") {
+	if strings.HasPrefix(msg, "error") {
 		return theme.ToastError
 	}
 	return theme.Toast
 }
 
-// toastLine rende msg come unica riga di toast: testo con lo stile del toast,
-// troncato alla larghezza massima del popup e centrato con spazi su contentW(w)
-// colonne.
+// toastLine renders msg as a single toast row: text with the toast style,
+// truncated to the maximum popup width and centred with spaces over contentW(w)
+// columns.
 func toastLine(msg string, w int) string {
 	cw := contentW(w)
 	if cw <= 0 {
@@ -135,8 +135,8 @@ func toastLine(msg string, w int) string {
 	return strings.Repeat(" ", left) + text + strings.Repeat(" ", cw-tw-left)
 }
 
-// overlayAt sovrappone block (righe separate da \n) su base a partire da
-// row,col, tagliando tutto ciò che esce dall'area contentW(w) x contentH(h).
+// overlayAt overlays block (rows separated by \n) on base starting at
+// row,col, cutting everything that goes outside the area contentW(w) x contentH(h).
 func overlayAt(base string, w, h, row, col int, block string) string {
 	cw, ch := contentW(w), contentH(h)
 	if cw <= 0 || ch <= 0 {
@@ -165,8 +165,8 @@ func overlayAt(base string, w, h, row, col int, block string) string {
 	return strings.Join(rows, "\n")
 }
 
-// splitRows divide base nelle righe dell'area contenuto: toglie un eventuale a
-// capo finale e completa con righe vuote quelle mancanti.
+// splitRows splits base into the rows of the content area: it removes a possible
+// trailing newline and pads the missing ones with empty rows.
 func splitRows(base string, ch int) []string {
 	if ch <= 0 {
 		return nil
@@ -181,10 +181,10 @@ func splitRows(base string, ch int) []string {
 	return rows
 }
 
-// spliceRow sostituisce in row il segmento che parte da col e occupa cutW
-// colonne con segment, lasciando invariate le parti esterne. row viene portata
-// alla larghezza w prima del taglio, così il segmento cade a col anche quando
-// la riga era più corta.
+// spliceRow replaces in row the segment that starts at col and occupies cutW
+// columns with segment, leaving the outer parts unchanged. row is brought
+// to the width w before the cut, so the segment falls at col even when
+// the row was shorter.
 func spliceRow(row string, col, cutW int, segment string, w int) string {
 	if col < 0 {
 		segment = ansi.Cut(segment, -col, ansi.StringWidth(segment))
@@ -196,7 +196,7 @@ func spliceRow(row string, col, cutW int, segment string, w int) string {
 	return prefix + segment + suffix
 }
 
-// padPlain porta s alla larghezza visiva w aggiungendo spazi a destra.
+// padPlain brings s to the visual width w by adding spaces on the right.
 func padPlain(s string, w int) string {
 	if cur := ansi.StringWidth(s); cur < w {
 		return s + strings.Repeat(" ", w-cur)

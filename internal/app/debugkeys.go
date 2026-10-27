@@ -8,15 +8,15 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// debugKeysEnv è la variabile d'ambiente che abilita la diagnostica dei tasti.
-// Vale "1" per attivarla; qualunque altro valore (o l'assenza) la disattiva.
+// debugKeysEnv is the environment variable that enables key diagnostics.
+// "1" activates it; any other value (or its absence) deactivates it.
 const debugKeysEnv = "MDEDIT_DEBUG_KEYS"
 
-// logKey appende una riga di diagnostica su ~/.mdedit/keys.log quando
-// MDEDIT_DEBUG_KEYS vale "1", così da vedere cosa invia davvero il terminale.
-// Se la diagnostica è disattivata non fa nulla e non crea alcun file.
-// Gli errori di I/O vengono ignorati: la diagnostica non deve mai bloccare
-// l'editor.
+// logKey appends a diagnostic line to ~/.mdedit/keys.log when
+// MDEDIT_DEBUG_KEYS is "1", so as to see what the terminal really sends.
+// If diagnostics are off it does nothing and creates no file.
+// I/O errors are ignored: diagnostics must never block
+// the editor.
 func logKey(k tea.KeyMsg) {
 	if os.Getenv(debugKeysEnv) != "1" {
 		return
@@ -42,10 +42,10 @@ func logKey(k tea.KeyMsg) {
 		k.Type, k.Runes, k.Alt, k.Paste, k.String())
 }
 
-// knownMsg indica se msg è uno dei messaggi che l'applicazione già conosce e
-// gestisce: il ridimensionamento, i tasti, il mouse e i tick che spengono i
-// toast di lista ed editor. Tutto il resto (per esempio una CSI sconosciuta che
-// bubbletea recapita grezza) è un messaggio non riconosciuto.
+// knownMsg reports whether msg is one of the messages the application already knows and
+// handles: resizing, keys, the mouse and the ticks that turn off the
+// list and editor toasts. Everything else (for example an unknown CSI that
+// bubbletea delivers raw) is an unrecognised message.
 func knownMsg(msg tea.Msg) bool {
 	switch msg.(type) {
 	case tea.WindowSizeMsg, tea.KeyMsg, tea.MouseMsg, listToastClear, editorToastClear:
@@ -54,12 +54,12 @@ func knownMsg(msg tea.Msg) bool {
 	return false
 }
 
-// logMsg appende una riga di diagnostica su ~/.mdedit/keys.log quando
-// MDEDIT_DEBUG_KEYS vale "1", ma SOLO per i messaggi che l'applicazione non
-// conosce: serve a vedere le sequenze di escape (CSI) che il terminale invia e
-// che nessuno dei casi gestiti intercetta. I tasti restano registrati da logKey.
-// Come logKey non fa nulla con la diagnostica disattivata e ignora gli errori
-// di I/O, perché la diagnostica non deve mai bloccare l'editor.
+// logMsg appends a diagnostic line to ~/.mdedit/keys.log when
+// MDEDIT_DEBUG_KEYS is "1", but ONLY for messages the application does not
+// know: it serves to see the escape sequences (CSI) the terminal sends and
+// that none of the handled cases intercepts. Keys stay recorded by logKey.
+// Like logKey it does nothing when diagnostics are off and ignores
+// I/O errors, because diagnostics must never block the editor.
 func logMsg(msg tea.Msg) {
 	if os.Getenv(debugKeysEnv) != "1" {
 		return

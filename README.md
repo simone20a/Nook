@@ -2,192 +2,186 @@
   <img src="brand/nook-logo.png" alt="Nook" width="440">
 </p>
 
-**Nook** è un editor di note markdown da terminale, scritto in Go con [Bubble Tea](https://github.com/charmbracelet/bubbletea). Le note vivono in un piccolo database SQLite locale, si organizzano in cartelle e si scrivono con una **Focus Line**: la riga che stai scrivendo resta sempre al centro dello schermo, in markdown grezzo, mentre tutto il resto del documento scorre attorno a lei già renderizzato (titoli, grassetti, link, citazioni, liste e checkbox senza i marcatori).
+**Nook** is a terminal markdown note editor written in Go with [Bubble Tea](https://github.com/charmbracelet/bubbletea). Notes live in a small local SQLite database, are organised in folders, and are written with a **Focus Line**: the line you are typing always stays in the middle of the screen as raw markdown, while the rest of the document scrolls around it already rendered (headings, bold, links, quotes, lists and checkboxes without their markers).
 
-## Perché Nook
+## Why Nook
 
-- **Scrivi senza distrazioni.** Il cursore non si muove: si muove il testo. L'occhio resta sempre allo stesso punto.
-- **Markdown vero, visto bene.** Solo la riga in focus mostra il testo grezzo; le altre sono rese con stili colorati e una palette attenuata fissa.
-- **Un menù per le note.** Lista centrata sulla voce selezionata, cartelle annidate, cestino con ripristino, filtro per titolo, rinomina e creazione al volo.
-- **Tastiera e mouse.** Ogni azione ha una scorciatoia; click, doppio click, triplo click e trascinamento funzionano come ci si aspetta.
-- **Niente di fragile.** Le note stanno in SQLite, l'eliminazione è soft: una nota cestinata si recupera finché non la elimini per sempre.
+- **Write without distractions.** The cursor doesn't move: the text does. Your eye always stays on the same spot.
+- **Real markdown, nicely seen.** Only the focused line shows raw text; the others are rendered with coloured styles and a fixed, muted palette.
+- **A menu for your notes.** A list centred on the selected entry, nested folders, a trash with restore, title filter, rename and on-the-fly creation.
+- **Keyboard and mouse.** Every action has a shortcut; click, double click, triple click and drag work as you would expect.
+- **Nothing fragile.** Notes are stored in SQLite and deletion is soft: a trashed note can be recovered until you delete it forever.
 
-## Installazione
+## Installation
 
-Serve Go 1.26 o successivo.
+Requires Go 1.26 or later.
 
 ```sh
-git clone <url-del-repository> nook
+git clone <repository-url> nook
 cd nook
 go build -o nook .
 ```
 
-Con il `Makefile`: `make build`, `make run`, `make test`, `make vet`, `make fmt`.
+With the `Makefile`: `make build`, `make run`, `make test`, `make vet`, `make fmt`.
 
-## Uso
+## Usage
 
 ```sh
 ./nook
 ```
 
-All'avvio si apre la lista delle note; da lì si crea, si apre, si rinomina e si
-cestina. Lo storage è SQLite in `~/.mdedit/notes.db` (override con `MDEDIT_DB`;
-il nome della cartella e della variabile è quello storico del progetto, prima
-che si chiamasse Nook), con eliminazione soft: le note cestinate restano
-recuperabili dal cestino.
+On start-up the note list opens; from there you create, open, rename and trash
+notes. Storage is SQLite at `~/.mdedit/notes.db` (override with `MDEDIT_DB`; the
+folder and variable names are the project's historical ones, from before it was
+called Nook), with soft deletion: trashed notes remain recoverable from the trash.
 
-L'interfaccia ha margini di 2 colonne e 1 riga su tutti i lati (azzerati sotto le
-30 colonne o le 10 righe) e un footer con i tasti principali; ogni schermata ha
-il suo popup di aiuto con la mappa completa.
+The interface has margins of 2 columns and 1 row on every side (reset below 30
+columns or 10 rows) and a footer with the main keys; each screen has its own help
+popup with the full key map.
 
-## Lista delle note
+## Note list
 
-Le voci stanno in una card larga al massimo 60 colonne, centrata orizzontalmente
-e verticalmente sulla voce selezionata. Ogni voce occupa due righe: il nome e,
-sotto, un dettaglio (`data · N parole` per le note, `N note` o `vuota` per le
-cartelle). Ogni voce è divisa dalla successiva da una linea `─`. Il titolo in
-alto è `NOTE`, con il percorso delle cartelle quando si scende (`NOTE › progetti`),
-oppure `CESTINO` nella vista del cestino.
+Entries sit in a card at most 60 columns wide, centred horizontally and vertically
+on the selected entry. Each entry takes two lines: the name and, below it, a
+detail (`date · N words` for notes, `N notes` or `empty` for folders). Each entry
+is separated from the next by a `─` line. The title at the top is `NOTES`, with
+the folder path when you go down (`NOTES › projects`), or `TRASH` in the trash view.
 
-### Cartelle
+### Folders
 
-Le cartelle stanno in cima alla lista (nome con il suffisso `/`, colore proprio) e
-possono essere annidate. Le note si creano nella cartella in cui ci si trova.
-Cestinare una cartella porta nel cestino anche le sue sottocartelle e tutte le
-note che contengono; una nota ripristinata dalla cartella cestinata torna alla
-radice.
+Folders sit at the top of the list (name with a `/` suffix, own colour) and can be
+nested. Notes are created in the folder you are currently in. Trashing a folder
+sends its subfolders and all the notes it contains to the trash too; a note
+restored from a trashed folder returns to the root.
 
-| Tasto | Azione |
+| Key | Action |
 |---|---|
-| `↑` / `↓` | muovi la selezione (resta centrata) |
-| `invio` / `→` | apri la nota, oppure entra nella cartella |
-| `←` / `esc` | risali alla cartella superiore |
-| `c` / `ctrl+k` | nuova cartella |
-| `n` / `ctrl+n` | nuova nota (nella cartella corrente) |
-| `r` / `ctrl+r` | rinomina |
-| `d` / `ctrl+d` | cestina (soft delete) |
-| `o` / `ctrl+o` | commuta lista ↔ cestino |
-| `u` | ripristina (solo nel cestino) |
-| `x` / `ctrl+x` | elimina per sempre (solo nel cestino) |
-| `f` / `ctrl+f` | filtro per titolo |
-| `?` | aiuto |
-| `q` / `ctrl+q` / `ctrl+c` | esci |
+| `↑` / `↓` | move the selection (stays centred) |
+| `enter` / `→` | open the note, or enter the folder |
+| `←` / `esc` | go up to the parent folder |
+| `c` / `ctrl+k` | new folder |
+| `n` / `ctrl+n` | new note (in the current folder) |
+| `r` / `ctrl+r` | rename |
+| `d` / `ctrl+d` | trash (soft delete) |
+| `o` / `ctrl+o` | toggle list ↔ trash |
+| `u` | restore (trash only) |
+| `x` / `ctrl+x` | delete forever (trash only) |
+| `f` / `ctrl+f` | filter by title |
+| `?` | help |
+| `q` / `ctrl+q` / `ctrl+c` | quit |
 
-Nei popup di input (`n`, `r`, `f`) `invio` conferma ed `esc` annulla. Nei popup di
-conferma (`d`, `x`) `s` o `invio` confermano, `n` o `esc` annullano.
+In input popups (`n`, `r`, `f`) `enter` confirms and `esc` cancels. In confirmation
+popups (`d`, `x`) `y` or `enter` confirm, `n` or `esc` cancel.
 
-Mouse: un click seleziona la voce, un doppio click apre la nota o entra nella
-cartella.
+Mouse: a click selects the entry, a double click opens the note or enters the
+folder.
 
 ## Editor
 
-La **Focus Line** resta sempre alla riga centrale: muovendoti è il testo a
-scorrere, non il cursore. La Focus Line mostra il markdown **grezzo**; tutte le
-altre righe sono renderizzate, con marcatori nascosti (`#`, `**`, `[]()`) e stili
-colorati per grassetto, corsivo, codice, link, barrato, citazioni, elenchi e
-checkbox. Le citazioni (`> testo`) sono in corsivo e affiancate da una barra
-verticale `▌` che corre lungo tutto il blocco, righe consecutive comprese — anche
-quella della Focus Line, che mostra il `>` grezzo ma mantiene la barra. Le righe
-non in focus hanno una palette attenuata, **fissa** e uguale
-per tutte: l'attenuazione non dipende dalla distanza dalla Focus Line. Le righe
-lunghe vengono troncate con `…`.
+The **Focus Line** always stays on the middle row: as you move, the text scrolls,
+not the cursor. The Focus Line shows **raw** markdown; every other line is
+rendered, with markers hidden (`#`, `**`, `[]()`) and coloured styles for bold,
+italic, code, links, strikethrough, quotes, lists and checkboxes. Quotes
+(`> text`) are italic and flanked by a vertical bar `▌` running along the whole
+block, consecutive lines included — even the Focus Line, which shows the raw `>`
+but keeps the bar. Lines that are not in focus use a muted palette that is
+**fixed** and identical for all of them: the dimming does not depend on the
+distance from the Focus Line. Long lines are truncated with `…`.
 
-| Tasto | Azione |
+| Key | Action |
 |---|---|
-| `F2` / `ctrl+s` | salva (toast di conferma) |
-| `esc` / `ctrl+q` | torna alla lista; con modifiche non salvate apre il popup *Salva / Scarta / Annulla* |
-| `ctrl+c` | esci subito |
-| `↑` `↓` `←` `→` | movimento |
-| `home` / `end` | inizio / fine riga |
-| `ctrl+home` / `ctrl+end`, `ctrl+↑` / `ctrl+↓` | inizio / fine documento |
-| `pgup` / `pgdn` | pagina |
-| `ctrl+←` / `ctrl+→` (o `alt+←` / `alt+→`) | parola indietro / avanti |
-| `shift+frecce`, `shift+home`/`end`, `shift+ctrl+←/→` | selezione |
-| trascinamento col mouse | selezione dal punto premuto alla cella raggiunta |
-| `backspace` / `delete` / `invio` | cancella / cancella avanti / nuova riga |
-| `alt+backspace` | cancella la parola precedente |
-| `ctrl+u` / `ctrl+k` | cancella fino a inizio / fine riga |
+| `F2` / `ctrl+s` | save (confirmation toast) |
+| `esc` / `ctrl+q` | back to the list; with unsaved changes opens the *Save / Discard / Cancel* popup |
+| `ctrl+c` | quit immediately |
+| `↑` `↓` `←` `→` | move |
+| `home` / `end` | start / end of line |
+| `ctrl+home` / `ctrl+end`, `ctrl+↑` / `ctrl+↓` | start / end of document |
+| `pgup` / `pgdn` | page |
+| `ctrl+←` / `ctrl+→` (or `alt+←` / `alt+→`) | word backward / forward |
+| `shift+arrows`, `shift+home`/`end`, `shift+ctrl+←/→` | selection |
+| mouse drag | select from the pressed point to the cell reached |
+| `backspace` / `delete` / `enter` | delete / delete forward / new line |
+| `alt+backspace` | delete the previous word |
+| `ctrl+u` / `ctrl+k` | delete to start / end of line |
 
-Nel popup *Salva / Scarta / Annulla*: `←`/`→` scelgono, `invio` conferma, `esc`
-torna all'editor.
+In the *Save / Discard / Cancel* popup: `←`/`→` choose, `enter` confirms, `esc`
+returns to the editor.
 
-La selezione è visibile: il testo selezionato è evidenziato sia sulla Focus Line
-(grezza) sia sulle righe rese, dove l'evidenziazione viene mappata sui segmenti
-markdown. Scrivendo o cancellando, il testo selezionato viene sostituito; le
-azioni di formattazione lo avvolgono.
+The selection is visible: selected text is highlighted both on the (raw) Focus
+Line and on rendered lines, where the highlight is mapped onto the markdown
+segments. Typing or deleting replaces the selected text; formatting actions wrap
+it.
 
-Mouse: un click porta la riga cliccata a Focus Line (la colonna viene mappata sul
-testo grezzo attraverso i segmenti markdown), un doppio click seleziona la parola,
-un triplo click la riga; tenendo premuto il tasto sinistro e trascinando si
-estende la selezione. Con il mouse attivo la selezione nativa del terminale si fa
-tenendo premuto `Shift` (o dal menu del terminale).
+Mouse: a click makes the clicked line the Focus Line (the column is mapped onto
+the raw text through the markdown segments), a double click selects the word, a
+triple click the line; holding the left button and dragging extends the
+selection. With the mouse enabled, native terminal selection is done by holding
+`Shift` (or from the terminal's menu).
 
-## Formattazione
+## Formatting
 
-`F3` apre la **palette di formattazione**: `↑`/`↓` per scorrere le azioni, `invio`
-per applicare, `esc` per chiudere senza applicare.
+`F3` opens the **formatting palette**: `↑`/`↓` to scroll through the actions,
+`enter` to apply, `esc` to close without applying.
 
-In alternativa `ctrl+t` seguito da una lettera:
+Alternatively, `ctrl+t` followed by a letter:
 
 | | | | |
 |---|---|---|---|
-| `b` grassetto | `i` corsivo | `s` barrato | `k` codice |
-| `u` lista | `x` checkbox | `l` link | `q` citazione |
-| `h` titolo a ciclo (`#` → `##` → `###`) | `0` toglie il titolo | | |
+| `b` bold | `i` italic | `s` strikethrough | `k` code |
+| `u` list | `x` checkbox | `l` link | `q` quote |
+| `h` cycling heading (`#` → `##` → `###`) | `0` removes the heading | | |
 
-Se dopo `ctrl+t` arriva un altro tasto, l'attesa viene annullata e il tasto fa il
-suo mestiere. Con una selezione attiva l'azione avvolge il testo selezionato;
-senza selezione sulla Focus Line il markdown si può anche scrivere a mano, dato
-che lì il testo è grezzo.
+If another key arrives after `ctrl+t`, the wait is cancelled and the key does its
+usual job. With an active selection the action wraps the selected text; with no
+selection on the Focus Line you can also type markdown by hand, since the text
+there is raw.
 
-## Aiuto
+## Help
 
-`F1` oppure `ctrl+/` aprono e chiudono il popup di aiuto in qualunque schermata;
-`?` funziona anche dalla lista (dove non si sta scrivendo testo). Qualsiasi altro
-tasto chiude il popup.
+`F1` or `ctrl+/` opens and closes the help popup on any screen; `?` also works
+from the list (where you are not typing text). Any other key closes the popup.
 
-## Note sui tasti
+## Notes on keys
 
-Alcune combinazioni non sono esprimibili da un terminale: `ctrl+shift+lettera`
-arriva come la stessa lettera con `ctrl`, e `ctrl+?` arriva come `backspace`. I
-tasti `alt+…` richiedono un terminale che li invii (su macOS serve "Use Option as
-Meta key" in Terminal.app o "Option key: Esc+" in iTerm2); dove non arrivano,
-valgono gli equivalenti con `ctrl` (`ctrl+←`/`ctrl+→`).
+Some combinations cannot be expressed by a terminal: `ctrl+shift+letter` arrives
+as the same letter with `ctrl`, and `ctrl+?` arrives as `backspace`. `alt+…` keys
+require a terminal that sends them (on macOS you need "Use Option as Meta key" in
+Terminal.app or "Option key: Esc+" in iTerm2); where they don't arrive, the `ctrl`
+equivalents apply (`ctrl+←`/`ctrl+→`).
 
-## Diagnostica tasti
+## Key diagnostics
 
-Con `MDEDIT_DEBUG_KEYS=1` ogni `tea.KeyMsg` ricevuto viene appeso in append a
-`~/.mdedit/keys.log` (una riga per tasto, con `Type`, `Runes`, `Alt`, `Paste` e
-`String`), utile per capire cosa invia davvero il terminale. Vengono inoltre
-loggati i messaggi che l'applicazione non riconosce — per esempio le sequenze di
-escape (CSI) sconosciute, che bubbletea recapita come messaggi generici — nel
-formato:
+With `MDEDIT_DEBUG_KEYS=1` every `tea.KeyMsg` received is appended to
+`~/.mdedit/keys.log` (one line per key, with `Type`, `Runes`, `Alt`, `Paste` and
+`String`), useful to see what your terminal actually sends. Messages the
+application doesn't recognise are logged as well — for example unknown escape
+sequences (CSI), which bubbletea delivers as generic messages — in the format:
 
 ```
 Type=%T Val=%q
 ```
 
-cioè il tipo Go del messaggio e il suo valore tra virgolette (una riga per
-messaggio). I messaggi già gestiti (`WindowSizeMsg`, `KeyMsg`, `MouseMsg` e i
-tick che spengono i toast) non finiscono in questo log: i tasti restano
-registrati nella riga di `logKey`. Senza quella variabile (o con un valore
-diverso da `1`) non viene scritto nulla e il file non viene creato.
+that is, the Go type of the message and its quoted value (one line per message).
+Messages that are already handled (`WindowSizeMsg`, `KeyMsg`, `MouseMsg` and the
+ticks that dismiss toasts) don't end up in this log: keys stay recorded in the
+`logKey` line. Without that variable (or with a value other than `1`) nothing is
+written and the file is not created.
 
 ```sh
 MDEDIT_DEBUG_KEYS=1 ./nook
 ```
 
-## Limitazioni del prototipo
+## Prototype limitations
 
-Rendering del markdown riga per riga: i blocchi di codice recintati e le tabelle
-compaiono come testo semplice, e i paragrafi non vengono rifluiti. Le righe
-renderizzate sono troncate a una riga di schermo, non mandate a capo. Niente
-syntax highlighting dei linguaggi di programmazione, ricerca nel testo, o undo.
+Markdown is rendered line by line: fenced code blocks and tables appear as plain
+text, and paragraphs are not reflowed. Rendered lines are truncated to one screen
+row, not wrapped. No programming-language syntax highlighting, text search, or
+undo.
 
-## Il logo
+## The logo
 
-Il logo di Nook segue lo stile di quello di [Orcrist](https://github.com/simone20a/Orcrist): la prima lettera, la **N**, è una pila di sei strati, uno per colore della palette, ciascuno arretrato rispetto a quello davanti lungo una sola direzione (in alto a sinistra, a 200°); le altre lettere sono del viola dello strato frontale, `#52389c`. Le lettere sono tracciati vettoriali, non testo, così il logo è identico ovunque. `brand/build.py` rigenera gli SVG e `brand/render.py` il PNG.
+Nook's logo follows the style of [Orcrist](https://github.com/simone20a/Orcrist)'s: the first letter, the **N**, is a stack of six layers, one per palette colour, each set back from the one in front along a single direction (up and to the left, at 200°); the other letters are the violet of the front layer, `#52389c`. The letters are vector outlines, not text, so the logo looks identical everywhere. `brand/build.py` regenerates the SVGs and `brand/render.py` the PNG.
 
-## Come è stato costruito
+## How it was built
 
-Nook è stato creato **esclusivamente con il coding agent [Orcrist](https://github.com/simone20a/Orcrist)**, usando soltanto i modelli **DeepSeek Flash** e **DeepSeek Pro**: nessun altro agente o modello ha scritto il codice.
+Nook was created **exclusively with the coding agent [Orcrist](https://github.com/simone20a/Orcrist)**, using only the **DeepSeek Flash** and **DeepSeek Pro** models: no other agent or model wrote the code.

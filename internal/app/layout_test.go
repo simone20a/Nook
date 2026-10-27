@@ -7,8 +7,8 @@ import (
 	ansi "github.com/charmbracelet/x/ansi"
 )
 
-// TestContentArea verifica che l'area contenuto perda i margini solo quando
-// lo schermo raggiunge le soglie minime.
+// TestContentArea checks that the content area loses the margins only when
+// the screen reaches the minimum thresholds.
 func TestContentArea(t *testing.T) {
 	if got := contentW(80); got != 76 {
 		t.Errorf("contentW(80) = %d, want 76", got)
@@ -24,7 +24,7 @@ func TestContentArea(t *testing.T) {
 	}
 }
 
-// TestTruncatePlain verifica il troncamento a larghezza nota del testo piano.
+// TestTruncatePlain checks truncation of plain text to a known width.
 func TestTruncatePlain(t *testing.T) {
 	if got := truncatePlain("abcdefghij", 5); got != "abcd…" {
 		t.Errorf("truncatePlain(%q, 5) = %q, want %q", "abcdefghij", got, "abcd…")
@@ -34,8 +34,8 @@ func TestTruncatePlain(t *testing.T) {
 	}
 }
 
-// TestWithMarginsCount verifica che withMargins alzi il numero di righe al
-// totale h e che ogni riga cominci con marginX spazi.
+// TestWithMarginsCount checks that withMargins raises the number of rows to the
+// total h and that every row starts with marginX spaces.
 func TestWithMarginsCount(t *testing.T) {
 	const w, h = 80, 10
 
@@ -49,26 +49,26 @@ func TestWithMarginsCount(t *testing.T) {
 	got := withMargins(content, w, h)
 	rows := strings.Split(got, "\n")
 	if len(rows) != h {
-		t.Fatalf("withMargins ha %d righe, want %d", len(rows), h)
+		t.Fatalf("withMargins has %d rows, want %d", len(rows), h)
 	}
 
 	indent := strings.Repeat(" ", marginX)
 	for i, row := range rows {
 		if !strings.HasPrefix(row, indent) {
-			t.Errorf("riga %d = %q, want prefisso di %d spazi", i, row, marginX)
+			t.Errorf("row %d = %q, want a prefix of %d spaces", i, row, marginX)
 		}
 	}
 }
 
-// TestListContentH verifica che l'altezza delle righe della lista lasci spazio
-// al banner e alla riga del toast, con il minimo di una riga.
+// TestListContentH checks that the height of the list rows leaves space
+// for the banner and the toast row, with a minimum of one row.
 func TestListContentH(t *testing.T) {
 	cases := []struct {
 		ch, bannerH, want int
 	}{
 		{22, 3, 18},
 		{10, 1, 8},
-		{2, 3, 1}, // sotto il minimo: resta una riga
+		{2, 3, 1}, // below the minimum: one row remains
 	}
 	for _, c := range cases {
 		if got := listContentH(c.ch, c.bannerH); got != c.want {
@@ -77,8 +77,8 @@ func TestListContentH(t *testing.T) {
 	}
 }
 
-// TestListCardW verifica la larghezza della card: al massimo 60 colonne e mai
-// più larga dello spazio disponibile.
+// TestListCardW checks the width of the card: at most 60 columns and never
+// wider than the available space.
 func TestListCardW(t *testing.T) {
 	cases := []struct{ cw, want int }{
 		{120, 60},
@@ -95,8 +95,8 @@ func TestListCardW(t *testing.T) {
 	}
 }
 
-// TestCardLeft verifica lo scostamento che centra la card sulla larghezza
-// dell'area contenuto.
+// TestCardLeft checks the offset that centres the card on the width
+// of the content area.
 func TestCardLeft(t *testing.T) {
 	cases := []struct {
 		cw, cardW, want int
@@ -113,37 +113,37 @@ func TestCardLeft(t *testing.T) {
 	}
 }
 
-// newListTestScreen crea uno store con tre note (corpo "due parole") e la
-// schermata lista caricata, con la nota di mezzo selezionata.
+// newListTestScreen creates a store with three notes (body "two words") and the
+// list screen loaded, with the middle note selected.
 func newListTestScreen(t *testing.T, w, h int) listScreen {
 	t.Helper()
 
 	st := newKeysTestStore(t)
-	for _, title := range []string{"prima", "seconda", "terza"} {
+	for _, title := range []string{"first", "second", "third"} {
 		n, err := st.Create(title)
 		if err != nil {
-			t.Fatalf("creazione nota %q: %v", title, err)
+			t.Fatalf("creating note %q: %v", title, err)
 		}
-		if err := st.Save(n.ID, title, "due parole"); err != nil {
-			t.Fatalf("salvataggio nota %q: %v", title, err)
+		if err := st.Save(n.ID, title, "two words"); err != nil {
+			t.Fatalf("saving note %q: %v", title, err)
 		}
 	}
 
 	s := newListScreen(st, w, h)
 	s.load()
 	if len(s.notes) < 3 {
-		t.Fatalf("la lista ha %d note, attese almeno 3", len(s.notes))
+		t.Fatalf("the list has %d notes, want at least 3", len(s.notes))
 	}
-	// La nota di mezzo: sopra e sotto restano voci del piano, così i separatori
-	// e la centratura si vedono davvero.
+	// The middle note: entries of the plane remain above and below, so the separators
+	// and the centring are really visible.
 	s.selected = 1
 	return s
 }
 
-// TestNoteLayoutRows verifica la forma del piano della lista: la nota
-// selezionata su due righe (titolo con barra e metadati), le altre su una riga
-// con il solo titolo, una riga di separazione fra le note e tutte le righe larghe
-// quanto la card.
+// TestNoteLayoutRows checks the shape of the list plane: the
+// selected note on two rows (title with bar and metadata), the others on one row
+// with the title only, a separator row between notes and all rows as wide
+// as the card.
 func TestNoteLayoutRows(t *testing.T) {
 	const w, h = 80, 24
 	s := newListTestScreen(t, w, h)
@@ -152,37 +152,37 @@ func TestNoteLayoutRows(t *testing.T) {
 	cardW := listCardW(cw)
 	plane, selFrom, selTo := s.listPlane(cw)
 
-	// Due righe per ogni nota (titolo e metadati) più una riga di separazione fra
-	// una nota e la successiva.
+	// Two rows for each note (title and metadata) plus a separator row between
+	// one note and the next.
 	wantRows := 2*len(s.notes) + (len(s.notes) - 1)
 	if len(plane) != wantRows {
-		t.Fatalf("il piano ha %d righe, want %d: %q", len(plane), wantRows, plane)
+		t.Fatalf("the plane has %d rows, want %d: %q", len(plane), wantRows, plane)
 	}
 
-	// Ogni riga del piano è larga esattamente quanto la card.
+	// Every row of the plane is exactly as wide as the card.
 	for r, row := range plane {
 		if got := ansi.StringWidth(ansi.Strip(row)); got != cardW {
-			t.Errorf("riga %d del piano larga %d colonne, want %d: %q", r, got, cardW, row)
+			t.Errorf("row %d of the plane %d columns wide, want %d: %q", r, got, cardW, row)
 		}
 	}
 
-	// La selezionata è la sola nota in grassetto e occupa comunque due righe,
-	// titolo e metadati.
+	// The selected one is the only note in bold and in any case occupies two rows,
+	// title and metadata.
 	if got := selTo - selFrom + 1; got != 2 {
-		t.Fatalf("la selezione occupa %d righe (da %d a %d), want 2", got, selFrom, selTo)
+		t.Fatalf("the selection occupies %d rows (from %d to %d), want 2", got, selFrom, selTo)
 	}
 	sel := s.notes[s.selected]
 	wantDetail := noteDetail(sel)
-	if !strings.Contains(wantDetail, "2 parole") {
-		t.Fatalf("noteDetail = %q, atteso il conteggio %q", wantDetail, "2 parole")
+	if !strings.Contains(wantDetail, "2 words") {
+		t.Fatalf("noteDetail = %q, want the count %q", wantDetail, "2 words")
 	}
 	if !strings.Contains(wantDetail, sel.UpdatedAt.Format("02/01/2006")) {
-		t.Fatalf("noteDetail = %q, attesa la data %q", wantDetail, sel.UpdatedAt.Format("02/01/2006"))
+		t.Fatalf("noteDetail = %q, want the date %q", wantDetail, sel.UpdatedAt.Format("02/01/2006"))
 	}
 
-	// Piano atteso, riga per riga: il titolo di ogni nota e i suoi metadati
-	// subito sotto, entrambi centrati nella card e senza alcun segno a sinistra,
-	// più una riga di separazione fra le note.
+	// Expected plane, row by row: the title of each note and its metadata
+	// right below, both centred in the card and without any mark on the left,
+	// plus a separator row between the notes.
 	wantPlane := make([]string, 0, wantRows)
 	for i := range s.notes {
 		wantPlane = append(wantPlane, s.notes[i].Title, noteDetail(s.notes[i]))
@@ -196,59 +196,59 @@ func TestNoteLayoutRows(t *testing.T) {
 		plain := ansi.Strip(plane[r])
 		if strings.HasPrefix(want, "─") {
 			if strings.TrimRight(plain, " ") != want {
-				t.Errorf("riga di separazione %d = %q, want %q", r, strings.TrimRight(plain, " "), want)
+				t.Errorf("separator row %d = %q, want %q", r, strings.TrimRight(plain, " "), want)
 			}
 			separators++
 			if r == 0 || r == len(wantPlane)-1 {
-				t.Errorf("riga di separazione %d in testa o in coda al piano", r)
+				t.Errorf("separator row %d at the head or tail of the plane", r)
 			}
 			continue
 		}
-		// Il testo è quello atteso, senza prefissi, e comincia dopo (cardW-larghezza)/2
-		// spazi: cioè è centrato nella card.
+		// The text is the expected one, without prefixes, and starts after (cardW-width)/2
+		// spaces: that is, it is centred in the card.
 		if got := strings.TrimSpace(plain); got != want {
-			t.Errorf("riga %d del piano = %q, want %q", r, got, want)
+			t.Errorf("row %d of the plane = %q, want %q", r, got, want)
 		}
 		wantLead := (cardW - ansi.StringWidth(want)) / 2
 		if got := leadingSpaces(plane[r]); got != wantLead {
-			t.Errorf("riga %d del piano comincia dopo %d spazi, want %d (testo non centrato): %q",
+			t.Errorf("row %d of the plane starts after %d spaces, want %d (text not centred): %q",
 				r, got, wantLead, plain)
 		}
 	}
 	if want := len(s.notes) - 1; separators != want {
-		t.Errorf("il piano ha %d righe di separazione, want %d", separators, want)
+		t.Errorf("the plane has %d separator rows, want %d", separators, want)
 	}
 
-	// Titolo e metadati della selezionata stanno sulle righe dell'intervallo.
+	// Title and metadata of the selected one are on the rows of the range.
 	if got := strings.TrimSpace(ansi.Strip(plane[selFrom])); got != sel.Title {
-		t.Errorf("riga titolo della selezionata = %q, want %q", got, sel.Title)
+		t.Errorf("title row of the selected one = %q, want %q", got, sel.Title)
 	}
 	if got := strings.TrimSpace(ansi.Strip(plane[selTo])); got != wantDetail {
-		t.Errorf("riga metadati della selezionata = %q, want %q", got, wantDetail)
+		t.Errorf("metadata row of the selected one = %q, want %q", got, wantDetail)
 	}
 
-	// La finestra della lista centra verticalmente l'intervallo della selezione:
-	// le righe libere sopra e sotto la selezione differiscono al più di una.
+	// The list window vertically centres the range of the selection:
+	// the free rows above and below the selection differ by at most one.
 	listH := listContentH(contentH(h), 1)
 	start := listWindowStart(selFrom, selTo, listH)
 	above := selFrom - start
 	below := (start + listH - 1) - selTo
 	if above < 0 || below < 0 {
-		t.Fatalf("la selezione [%d..%d] esce dalla finestra di %d righe che parte da %d", selFrom, selTo, listH, start)
+		t.Fatalf("the selection [%d..%d] goes out of the window of %d rows starting at %d", selFrom, selTo, listH, start)
 	}
 	if above-below > 1 || below-above > 1 {
-		t.Errorf("selezione non centrata: %d righe libere sopra, %d sotto (finestra di %d righe)", above, below, listH)
+		t.Errorf("selection not centred: %d free rows above, %d below (window of %d rows)", above, below, listH)
 	}
 
 	window := listWindow(plane, selFrom, selTo, listH)
 	if len(window) != listH {
-		t.Fatalf("la finestra ha %d righe, want %d", len(window), listH)
+		t.Fatalf("the window has %d rows, want %d", len(window), listH)
 	}
 	if got := strings.TrimSpace(ansi.Strip(window[above])); got != sel.Title {
-		t.Errorf("finestra, riga %d = %q, want il titolo %q della selezionata", above, got, sel.Title)
+		t.Errorf("window, row %d = %q, want the title %q of the selected one", above, got, sel.Title)
 	}
 	if got := strings.TrimSpace(ansi.Strip(window[above+1])); got != wantDetail {
-		t.Errorf("finestra, riga %d = %q, want i metadati %q della selezionata", above+1, got, wantDetail)
+		t.Errorf("window, row %d = %q, want the metadata %q of the selected one", above+1, got, wantDetail)
 	}
 	for r := 0; r < listH; r++ {
 		i := start + r
@@ -256,26 +256,26 @@ func TestNoteLayoutRows(t *testing.T) {
 			continue
 		}
 		if got := strings.TrimRight(ansi.Strip(window[r]), " "); got != "" {
-			t.Errorf("finestra, riga %d fuori dal piano = %q, attesa vuota", r, got)
+			t.Errorf("window, row %d outside the plane = %q, want empty", r, got)
 		}
 	}
 }
 
-// leadingSpaces conta gli spazi iniziali di una riga, ignorando i codici ANSI.
+// leadingSpaces counts the leading spaces of a row, ignoring ANSI codes.
 func leadingSpaces(row string) int {
 	plain := ansi.Strip(row)
 	return len(plain) - len(strings.TrimLeft(plain, " "))
 }
 
-// TestListCenteredHorizontally verifica che le righe della card siano scostate
-// a destra di cardLeft colonne (più il margine): i titoli delle note e le righe
-// di separazione cominciano tutti alla stessa colonna, tranne titolo e footer
-// che restano centrati sull'intera area contenuto.
+// TestListCenteredHorizontally checks that the card rows are offset
+// to the right by cardLeft columns (plus the margin): the note titles and the
+// separator rows all start at the same column, except title and footer
+// which stay centred on the whole content area.
 func TestListCenteredHorizontally(t *testing.T) {
 	cases := []struct{ w, h int }{
-		{80, 24},  // card di 60 su 76 colonne: scostamento 8 + margine 2
-		{160, 24}, // card di 60 su 156 colonne: scostamento 48 + margine 2
-		{40, 24},  // card a larghezza piena: nessuno scostamento, solo il margine
+		{80, 24},  // card of 60 on 76 columns: offset 8 + margin 2
+		{160, 24}, // card of 60 on 156 columns: offset 48 + margin 2
+		{40, 24},  // full-width card: no offset, only the margin
 	}
 	for _, c := range cases {
 		s := newListTestScreen(t, c.w, c.h)
@@ -292,13 +292,13 @@ func TestListCenteredHorizontally(t *testing.T) {
 		for _, row := range rows {
 			plain := ansi.Strip(row)
 			for _, n := range s.notes {
-				// Il titolo è centrato nella card: comincia a cardCol più metà
-				// dello spazio libero.
+				// The title is centred in the card: it starts at cardCol plus half
+				// of the free space.
 				if i := strings.Index(plain, n.Title); i >= 0 {
 					col := ansi.StringWidth(plain[:i])
 					want := cardCol + (cardW-ansi.StringWidth(n.Title))/2
 					if col != want {
-						t.Errorf("w=%d: il titolo %q comincia alla colonna %d, want %d:\n%s",
+						t.Errorf("w=%d: the title %q starts at column %d, want %d:\n%s",
 							c.w, n.Title, col, want, s.View())
 					}
 					titles++
@@ -306,24 +306,24 @@ func TestListCenteredHorizontally(t *testing.T) {
 			}
 			if i := strings.Index(plain, "─"); i >= 0 {
 				if col := ansi.StringWidth(plain[:i]); col != cardCol {
-					t.Errorf("w=%d: la riga di separazione comincia alla colonna %d, want %d:\n%s",
+					t.Errorf("w=%d: the separator row starts at column %d, want %d:\n%s",
 						c.w, col, cardCol, s.View())
 				}
 			}
 		}
 		if titles == 0 {
-			t.Fatalf("w=%d: nessun titolo trovato nella view:\n%s", c.w, s.View())
+			t.Fatalf("w=%d: no title found in the view:\n%s", c.w, s.View())
 		}
 
-		// La card sta dentro lo schermo: inizio card + larghezza non superano w.
+		// The card is inside the screen: card start + width do not exceed w.
 		if limit := cardCol + cardW; limit > c.w {
-			t.Errorf("w=%d: la card finisce alla colonna %d, oltre il bordo %d", c.w, limit, c.w)
+			t.Errorf("w=%d: the card ends at column %d, beyond the edge %d", c.w, limit, c.w)
 		}
 	}
 }
 
-// TestListHitOutsideCard verifica che i click fuori dalla larghezza della card
-// non colpiscano nessuna nota, mentre un click al suo interno la seleziona.
+// TestListHitOutsideCard checks that clicks outside the width of the card
+// hit no note, while a click inside it selects it.
 func TestListHitOutsideCard(t *testing.T) {
 	const w, h = 120, 24
 	s := newListTestScreen(t, w, h)
@@ -336,7 +336,7 @@ func TestListHitOutsideCard(t *testing.T) {
 		for x := 0; x < w; x++ {
 			inside := x >= left && x < right
 			if _, ok := s.listHitNote(x, y); ok && !inside {
-				t.Fatalf("il click (%d,%d) fuori dalla card [%d,%d) ha colpito una nota", x, y, left, right)
+				t.Fatalf("the click (%d,%d) outside the card [%d,%d) hit a note", x, y, left, right)
 			}
 		}
 	}
@@ -346,6 +346,6 @@ func TestListHitOutsideCard(t *testing.T) {
 		_, hit = s.listHitNote(left+2, y)
 	}
 	if !hit {
-		t.Errorf("nessun click dentro la card ha colpito una nota")
+		t.Errorf("no click inside the card hit a note")
 	}
 }

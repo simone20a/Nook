@@ -9,7 +9,7 @@ import (
 	"nook/internal/theme"
 )
 
-// View disegna l'editor: una riga per ogni riga dello schermo, separate da "\n".
+// View draws the editor: one row for each screen row, separated by "\n".
 func (e Editor) View() string {
 	out := ""
 	for r := 0; r < e.height; r++ {
@@ -21,18 +21,18 @@ func (e Editor) View() string {
 	return out
 }
 
-// Testi del footer dell'editor: i tasti disponibili, oppure l'attesa del tasto
-// che applica la formattazione (ctrl+t già premuto).
+// Editor footer texts: the available keys, or the wait for the key
+// that applies formatting (ctrl+t already pressed).
 const (
-	edFooterHint   = "F2 salva · esc esci · F3 formatta · F1 aiuto"
+	edFooterHint   = "F2 save · esc exit · F3 format · F1 help"
 	edFooterFormat = "ctrl+t …"
 )
 
-// Footer rende l'ultima riga della schermata dell'editor: una sola riga
-// troncata alla larghezza, in colore attenuato via theme.DimText e completata
-// con spazi a destra. Mentre l'editor aspetta il tasto di formattazione mostra
-// "ctrl+t …". Non fa parte di View: la schermata gli riserva una riga e gli dà
-// all'editor un'altezza di contenuto ridotta di uno.
+// Footer renders the last row of the editor screen: a single row
+// truncated to the width, in dimmed colour via theme.DimText and padded
+// with spaces on the right. While the editor waits for the formatting key it shows
+// "ctrl+t …". It is not part of View: the screen reserves a row for it and gives
+// the editor a content height reduced by one.
 func (e Editor) Footer() string {
 	if e.width <= 0 {
 		return ""
@@ -49,10 +49,10 @@ func (e Editor) Footer() string {
 	return theme.DimText.Render(plain) + strings.Repeat(" ", pad)
 }
 
-// renderRow disegna una riga dello schermo: la riga di focus mostra il testo
-// grezzo col cursore, le altre mostrano i segmenti markdown resi con la palette
-// attenuata di theme e troncati alla larghezza dell'editor. L'attenuazione delle
-// righe senza focus è fissa: non dipende dalla distanza dal centro.
+// renderRow draws a screen row: the focus row shows the raw text with the cursor,
+// the others show the markdown segments rendered with the dimmed palette
+// of theme and truncated to the editor width. The dimming of the
+// rows without focus is fixed: it does not depend on the distance from the centre.
 func (e Editor) renderRow(r int) string {
 	if r == e.focusRow() {
 		return e.renderFocusRow()
@@ -64,8 +64,8 @@ func (e Editor) renderRow(r int) string {
 	raw := e.lines[idx]
 	segs := markdown.RenderLine(raw, isInsideFence(e.lines, idx))
 
-	// Le righe senza focus mostrano il markdown reso; se la selezione le
-	// attraversa, la parte selezionata viene evidenziata.
+	// Rows without focus show rendered markdown; if the selection crosses
+	// them, the selected part is highlighted.
 	selFrom, selTo, hasSel := e.selectionOnLine(idx)
 	fromByte, toByte := runeRangeToBytes(raw, selFrom, selTo)
 
@@ -81,8 +81,8 @@ func (e Editor) renderRow(r int) string {
 	return truncate(b.String(), e.width)
 }
 
-// truncate accorcia s alla larghezza w in celle, aggiungendo "…" se taglia.
-// È consapevole delle celle larghe e delle sequenze ANSI.
+// truncate shortens s to the width w in cells, adding "…" if it cuts.
+// It is aware of wide cells and ANSI sequences.
 func truncate(s string, w int) string {
 	if w <= 0 {
 		return ""
@@ -90,14 +90,14 @@ func truncate(s string, w int) string {
 	return ansi.Truncate(s, w, "…")
 }
 
-// isFenceLine indica se la riga apre o chiude un blocco di codice.
+// isFenceLine reports whether the line opens or closes a code block.
 func isFenceLine(s string) bool {
 	t := strings.TrimSpace(s)
 	return strings.HasPrefix(t, "```") || strings.HasPrefix(t, "~~~")
 }
 
-// isInsideFence indica se la riga idx sta dentro un blocco di codice: conta le
-// righe di fence che la precedono, un numero dispari significa fence aperto.
+// isInsideFence reports whether line idx is inside a code block: it counts the
+// fence lines that precede it, an odd number means an open fence.
 func isInsideFence(lines []string, idx int) bool {
 	count := 0
 	for i := 0; i < idx && i < len(lines); i++ {
@@ -108,20 +108,20 @@ func isInsideFence(lines []string, idx int) bool {
 	return count%2 == 1
 }
 
-// renderFocusRow disegna la riga del cursore: testo grezzo, finestra
-// orizzontale a partire da hScroll, cursore evidenziato in reverse. Il prefisso
-// di blocco viene compensato come spazio per non spostare il testo a video.
-// Tutto il testo mostrato è reso con theme.Selected (bold), tranne il carattere
-// del cursore che resta in reverse.
+// renderFocusRow draws the cursor's row: raw text, horizontal window
+// starting from hScroll, cursor highlighted in reverse. The block prefix
+// is compensated with spaces so as not to shift the text on screen.
+// All the text shown is rendered with theme.Selected (bold), except the cursor
+// character, which stays in reverse.
 func (e Editor) renderFocusRow() string {
 	raw := ""
 	if e.cursorLine >= 0 && e.cursorLine < len(e.lines) {
 		raw = e.lines[e.cursorLine]
 	}
 
-	// Il prefisso di blocco rimosso viene compensato: spazi per i marcatori, ma
-	// la barra verticale per le citazioni, così la barra resta continua anche
-	// attraverso la Focus Line.
+	// The removed block prefix is compensated: spaces for the markers, but
+	// the vertical bar for quotes, so the bar stays continuous even
+	// across the Focus Line.
 	padW := markdown.PrefixWidth(raw)
 	gutter := strings.Repeat(" ", padW)
 	if padW > 0 && markdown.IsQuote(raw) {
@@ -153,8 +153,8 @@ func (e Editor) renderFocusRow() string {
 
 	var b strings.Builder
 	var run strings.Builder
-	selectedStyle := false // true quando il testo in corso è dentro la selezione
-	pending := false       // true quando c'è testo da rendere
+	selectedStyle := false // true when the current text is inside the selection
+	pending := false       // true when there is text to render
 	flush := func() {
 		if !pending {
 			return

@@ -6,13 +6,13 @@ import (
 	"time"
 )
 
-// ErrFolderExists viene restituito quando si tenta di creare o rinominare una
-// cartella con un nome già usato da un'altra cartella con lo stesso genitore
-// (confronto case-insensitive).
-var ErrFolderExists = errors.New("una cartella con questo nome esiste già")
+// ErrFolderExists is returned when trying to create or rename a
+// folder with a name already used by another folder with the same parent
+// (case-insensitive comparison).
+var ErrFolderExists = errors.New("a folder with this name already exists")
 
-// Folder è una cartella di note. ParentID nil vuol dire che la cartella sta
-// alla radice.
+// Folder is a folder of notes. ParentID nil means the folder is at
+// the root.
 type Folder struct {
 	ID        int64
 	Name      string
@@ -20,16 +20,16 @@ type Folder struct {
 	CreatedAt time.Time
 }
 
-// subtreeSQL seleziona l'id e tutti i suoi discendenti dalla tabella folders.
-// Il parametro è l'id di partenza e viene ripetuto dal chiamante.
+// subtreeSQL selects the id and all its descendants from the folders table.
+// The parameter is the starting id and is repeated by the caller.
 const subtreeSQL = `(WITH RECURSIVE sub(id) AS (
         SELECT id FROM folders WHERE id = ?
         UNION ALL
         SELECT f.id FROM folders f JOIN sub ON f.parent_id = sub.id
     ) SELECT id FROM sub)`
 
-// idValue traduce un eventuale id di cartella in valore da passare a SQLite:
-// la radice è 0, così IFNULL(folder_id, 0) = 0 confronta le note senza cartella.
+// idValue turns an optional folder id into a value to pass to SQLite:
+// the root is 0, so IFNULL(folder_id, 0) = 0 matches notes without a folder.
 func idValue(id *int64) int64 {
 	if id == nil {
 		return 0
@@ -37,7 +37,7 @@ func idValue(id *int64) int64 {
 	return *id
 }
 
-// CreateFolder crea una cartella dentro parentID (nil = radice).
+// CreateFolder creates a folder inside parentID (nil = root).
 func (s *Store) CreateFolder(name string, parentID *int64) (*Folder, error) {
 	res, err := s.db.Exec(
 		"INSERT INTO folders (name, parent_id, created_at) VALUES (?, ?, ?)",
@@ -56,8 +56,8 @@ func (s *Store) CreateFolder(name string, parentID *int64) (*Folder, error) {
 	return s.GetFolder(id)
 }
 
-// ListFolders restituisce le cartelle attive con il genitore indicato (nil =
-// radice), ordinate per nome.
+// ListFolders returns the active folders with the given parent (nil =
+// root), ordered by name.
 func (s *Store) ListFolders(parentID *int64) ([]Folder, error) {
 	query := "SELECT id, name, parent_id, created_at FROM folders WHERE deleted_at IS NULL AND IFNULL(parent_id, 0) = ? ORDER BY name COLLATE NOCASE"
 	if parentID != nil {
@@ -80,13 +80,13 @@ func (s *Store) ListFolders(parentID *int64) ([]Folder, error) {
 	return out, rows.Err()
 }
 
-// GetFolder restituisce la cartella con l'id indicato.
+// GetFolder returns the folder with the given id.
 func (s *Store) GetFolder(id int64) (*Folder, error) {
 	row := s.db.QueryRow("SELECT id, name, parent_id, created_at FROM folders WHERE id = ?", id)
 	return scanFolder(row)
 }
 
-// RenameFolder cambia il nome di una cartella.
+// RenameFolder changes the name of a folder.
 func (s *Store) RenameFolder(id int64, name string) error {
 	_, err := s.db.Exec("UPDATE folders SET name = ? WHERE id = ?", name, id)
 	if err != nil && isUniqueViolation(err) {
@@ -95,8 +95,8 @@ func (s *Store) RenameFolder(id int64, name string) error {
 	return err
 }
 
-// SoftDeleteFolder sposta nel cestino la cartella, tutte le sue sottocartelle e
-// tutte le note che contengono.
+// SoftDeleteFolder moves to the trash the folder, all its subfolders and
+// all the notes they contain.
 func (s *Store) SoftDeleteFolder(id int64) error {
 	now := nowString()
 	tx, err := s.db.Begin()
@@ -120,8 +120,8 @@ func (s *Store) SoftDeleteFolder(id int64) error {
 	return tx.Commit()
 }
 
-// FolderPath restituisce la catena di cartelle dalla radice alla cartella id,
-// quest'ultima compresa. Una cartella inesistente dà un percorso vuoto.
+// FolderPath returns the chain of folders from the root to the folder id,
+// the latter included. A non-existent folder gives an empty path.
 func (s *Store) FolderPath(id *int64) ([]Folder, error) {
 	var rev []Folder
 	for cur := id; cur != nil; {
@@ -134,7 +134,7 @@ func (s *Store) FolderPath(id *int64) ([]Folder, error) {
 		}
 		rev = append(rev, *f)
 		cur = f.ParentID
-		if len(rev) > 64 { // guardia contro un eventuale ciclo nel database
+		if len(rev) > 64 { // guard against a possible cycle in the database
 			break
 		}
 	}
@@ -145,8 +145,8 @@ func (s *Store) FolderPath(id *int64) ([]Folder, error) {
 	return out, nil
 }
 
-// CountNotes conta le note attive contenute direttamente nella cartella
-// folderID (nil = radice).
+// CountNotes counts the active notes contained directly in the folder
+// folderID (nil = root).
 func (s *Store) CountNotes(folderID *int64) (int, error) {
 	var n int
 	err := s.db.QueryRow(
@@ -156,7 +156,7 @@ func (s *Store) CountNotes(folderID *int64) (int, error) {
 	return n, err
 }
 
-// rowScannerFolder è soddisfatta sia da *sql.Row sia da *sql.Rows.
+// rowScannerFolder is satisfied by both *sql.Row and *sql.Rows.
 type rowScannerFolder interface {
 	Scan(dest ...any) error
 }

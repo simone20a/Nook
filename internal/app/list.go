@@ -13,7 +13,7 @@ import (
 	"nook/internal/theme"
 )
 
-// Modalità della schermata lista.
+// List screen modes.
 const (
 	modeNormal = iota
 	modeInputNew
@@ -24,7 +24,7 @@ const (
 	modeConfirmPurge
 )
 
-// entryKind distingue le due specie di voci della lista.
+// entryKind distinguishes the two kinds of list entries.
 type entryKind int
 
 const (
@@ -32,9 +32,9 @@ const (
 	entryNote
 )
 
-// listEntry è una voce della lista: una cartella o una nota. Il titolo è già
-// pronto per la card (le cartelle hanno il suffisso "/"), il dettaglio è la
-// riga sotto (numero di note per le cartelle, data e parole per le note).
+// listEntry is an entry of the list: a folder or a note. The title is already
+// ready for the card (folders have the "/" suffix), the detail is the
+// row below (number of notes for folders, date and words for notes).
 type listEntry struct {
 	kind   entryKind
 	id     int64
@@ -42,9 +42,9 @@ type listEntry struct {
 	detail string
 }
 
-// listScreen è la schermata della lista delle note: riga di titolo, piano di
-// righe centrato sulla selezione, footer, popup per input, filtro e conferme,
-// toast sovrapposti.
+// listScreen is the screen of the notes list: title row, plane of
+// rows centred on the selection, footer, popups for input, filter and confirmations,
+// overlaid toasts.
 type listScreen struct {
 	st        *store.Store
 	notes     []store.Note
@@ -52,7 +52,7 @@ type listScreen struct {
 	folderID  *int64
 	path      []store.Folder
 	showTrash bool
-	// folderNotes è il numero di note contenute in ogni cartella mostrata.
+	// folderNotes is the number of notes contained in each folder shown.
 	folderNotes map[int64]int
 	selected    int
 	mode        int
@@ -64,14 +64,14 @@ type listScreen struct {
 	height      int
 	action      listAction
 	actionID    int64
-	// lastClick è l'ultimo click col mouse nella lista, per il doppio click.
+	// lastClick is the last mouse click in the list, for the double click.
 	lastClick listClick
 }
 
-// newListScreen crea la schermata lista con la lista vuota.
+// newListScreen creates the list screen with an empty list.
 func newListScreen(st *store.Store, w, h int) listScreen {
 	ti := textinput.New()
-	ti.Placeholder = "Titolo"
+	ti.Placeholder = "Title"
 	ti.CharLimit = 200
 	ti.Width = 40
 
@@ -84,43 +84,43 @@ func newListScreen(st *store.Store, w, h int) listScreen {
 	}
 }
 
-// listToastDuration è quanto resta visibile un toast della lista.
+// listToastDuration is how long a list toast stays visible.
 const listToastDuration = 3 * time.Second
 
-// listToastClear è il messaggio che spegne il toast della lista allo scadere
-// di listToastDuration.
+// listToastClear is the message that turns off the list toast when
+// listToastDuration expires.
 type listToastClear struct{}
 
-// listToastTickCmd restituisce il comando che dopo listToastDuration recapita
+// listToastTickCmd returns the command that after listToastDuration delivers
 // listToastClear.
 func listToastTickCmd() tea.Cmd {
 	return tea.Tick(listToastDuration, func(time.Time) tea.Msg { return listToastClear{} })
 }
 
-// toastActive indica se il toast è ancora da mostrare.
+// toastActive reports whether the toast is still to be shown.
 func (s listScreen) toastActive() bool {
 	return s.toast != "" && time.Now().Before(s.toastUntil)
 }
 
-// showToast imposta il toast con la durata standard.
+// showToast sets the toast with the standard duration.
 func (s listScreen) showToast(msg string) listScreen {
 	s.toast = msg
 	s.toastUntil = time.Now().Add(listToastDuration)
 	return s
 }
 
-// load ricarica dallo store le cartelle e le note della vista corrente e vi
-// applica il filtro corrente, senza distinzione fra maiuscole e minuscole.
+// load reloads from the store the folders and notes of the current view and
+// applies the current filter to them, case-insensitively.
 func (s *listScreen) load() {
 	if s.showTrash {
-		// Il cestino mostra tutte le note eliminate, di qualunque cartella.
+		// The trash shows all deleted notes, from any folder.
 		s.folders = nil
 		s.folderNotes = nil
 		notes, err := s.st.List(true)
 		if err != nil {
 			s.notes = nil
 			s.selected = 0
-			*s = s.showToast("errore: " + err.Error())
+			*s = s.showToast("error: " + err.Error())
 			return
 		}
 		s.notes = filterNotes(notes, s.filter)
@@ -132,14 +132,14 @@ func (s *listScreen) load() {
 	if err != nil {
 		s.folders, s.notes = nil, nil
 		s.selected = 0
-		*s = s.showToast("errore: " + err.Error())
+		*s = s.showToast("error: " + err.Error())
 		return
 	}
 	notes, err := s.st.ListIn(s.folderID, false, false)
 	if err != nil {
 		s.folders, s.notes = nil, nil
 		s.selected = 0
-		*s = s.showToast("errore: " + err.Error())
+		*s = s.showToast("error: " + err.Error())
 		return
 	}
 
@@ -156,18 +156,18 @@ func (s *listScreen) load() {
 	s.clampSelected()
 }
 
-// clampSelected riporta la selezione dentro il numero di voci correnti.
+// clampSelected brings the selection back within the number of current entries.
 func (s *listScreen) clampSelected() {
 	if s.selected < 0 || s.selected > s.entryCount()-1 {
 		s.selected = 0
 	}
 }
 
-// entryCount è il numero di voci della lista, cartelle più note.
+// entryCount is the number of entries of the list, folders plus notes.
 func (s listScreen) entryCount() int { return len(s.folders) + len(s.notes) }
 
-// entries restituisce le voci della lista nell'ordine in cui compaiono: prima
-// le cartelle, poi le note.
+// entries returns the entries of the list in the order they appear: first
+// the folders, then the notes.
 func (s listScreen) entries() []listEntry {
 	out := make([]listEntry, 0, s.entryCount())
 	for _, f := range s.folders {
@@ -189,20 +189,20 @@ func (s listScreen) entries() []listEntry {
 	return out
 }
 
-// folderDetail è la riga sotto il nome di una cartella.
+// folderDetail is the row below the name of a folder.
 func folderDetail(notes int) string {
 	switch notes {
 	case 0:
-		return "vuota"
+		return "empty"
 	case 1:
-		return "1 nota"
+		return "1 note"
 	default:
-		return strconv.Itoa(notes) + " note"
+		return strconv.Itoa(notes) + " notes"
 	}
 }
 
-// filterFolders tiene solo le cartelle il cui nome contiene filter, senza
-// distinzione fra maiuscole e minuscole.
+// filterFolders keeps only the folders whose name contains filter, case-
+// insensitively.
 func filterFolders(folders []store.Folder, filter string) []store.Folder {
 	q := strings.ToLower(strings.TrimSpace(filter))
 	if q == "" {
@@ -217,7 +217,7 @@ func filterFolders(folders []store.Folder, filter string) []store.Folder {
 	return out
 }
 
-// reload ricarica le note e restituisce il tick che spegne un eventuale toast.
+// reload reloads the notes and returns the tick that turns off a possible toast.
 func (s listScreen) reload() (listScreen, tea.Cmd) {
 	s.load()
 	if s.toast != "" {
@@ -226,14 +226,14 @@ func (s listScreen) reload() (listScreen, tea.Cmd) {
 	return s, nil
 }
 
-// reloadAndSelect ricarica le note e sposta la selezione sulla nota con l'ID
-// indicato, se è ancora nella lista.
+// reloadAndSelect reloads the notes and moves the selection to the note with the given
+// ID, if it is still in the list.
 func (s listScreen) reloadAndSelect(id int64) listScreen {
 	return s.reloadAndSelectEntry(entryNote, id)
 }
 
-// reloadAndSelectEntry ricarica la lista e sposta la selezione sulla voce
-// (cartella o nota) con l'id indicato.
+// reloadAndSelectEntry reloads the list and moves the selection to the entry
+// (folder or note) with the given id.
 func (s listScreen) reloadAndSelectEntry(kind entryKind, id int64) listScreen {
 	s.load()
 	for i, e := range s.entries() {
@@ -245,8 +245,8 @@ func (s listScreen) reloadAndSelectEntry(kind entryKind, id int64) listScreen {
 	return s
 }
 
-// filterNotes tiene solo le note il cui titolo contiene filter, senza
-// distinzione fra maiuscole e minuscole.
+// filterNotes keeps only the notes whose title contains filter, case-
+// insensitively.
 func filterNotes(notes []store.Note, filter string) []store.Note {
 	q := strings.ToLower(strings.TrimSpace(filter))
 	if q == "" {
@@ -261,7 +261,7 @@ func filterNotes(notes []store.Note, filter string) []store.Note {
 	return out
 }
 
-// currentEntry restituisce la voce selezionata, se c'è.
+// currentEntry returns the selected entry, if any.
 func (s listScreen) currentEntry() (listEntry, bool) {
 	entries := s.entries()
 	if s.selected < 0 || s.selected >= len(entries) {
@@ -270,7 +270,7 @@ func (s listScreen) currentEntry() (listEntry, bool) {
 	return entries[s.selected], true
 }
 
-// current restituisce la nota selezionata, se la voce selezionata è una nota.
+// current returns the selected note, if the selected entry is a note.
 func (s listScreen) current() (store.Note, bool) {
 	e, ok := s.currentEntry()
 	if !ok || e.kind != entryNote {
@@ -284,11 +284,11 @@ func (s listScreen) current() (store.Note, bool) {
 	return store.Note{}, false
 }
 
-// enterFolder scende nella cartella id, azzerando la selezione.
+// enterFolder descends into the folder id, clearing the selection.
 func (s listScreen) enterFolder(id int64) listScreen {
 	f, err := s.st.GetFolder(id)
 	if err != nil {
-		return s.showToast("errore: " + err.Error())
+		return s.showToast("error: " + err.Error())
 	}
 	s.folderID = &f.ID
 	s.path = append(s.path[:len(s.path):len(s.path)], *f)
@@ -297,8 +297,8 @@ func (s listScreen) enterFolder(id int64) listScreen {
 	return s
 }
 
-// goUp risale alla cartella che contiene quella corrente; alla radice non fa
-// nulla.
+// goUp goes up to the folder that contains the current one; at the root it does
+// nothing.
 func (s listScreen) goUp() listScreen {
 	if s.showTrash || len(s.path) == 0 {
 		return s
@@ -315,18 +315,18 @@ func (s listScreen) goUp() listScreen {
 	return s
 }
 
-// setSize adatta la schermata alla dimensione del terminale.
+// setSize adapts the screen to the terminal size.
 func (s listScreen) setSize(w, h int) listScreen {
 	s.width, s.height = w, h
 	return s
 }
 
-// Update gestisce i messaggi della schermata lista.
+// Update handles the messages of the list screen.
 func (s listScreen) Update(msg tea.Msg) (listScreen, tea.Cmd) {
 	switch msg := msg.(type) {
 	case listToastClear:
-		// Il toast si spegne solo se i suoi 3 secondi sono davvero passati;
-		// altrimenti serve un altro tick.
+		// The toast turns off only when its 3 seconds have really passed;
+		// otherwise another tick is needed.
 		if s.toastActive() {
 			return s, listToastTickCmd()
 		}
@@ -341,7 +341,7 @@ func (s listScreen) Update(msg tea.Msg) (listScreen, tea.Cmd) {
 	return s, nil
 }
 
-// updateKey gestisce un tasto secondo lo schema condiviso.
+// updateKey handles a key according to the shared scheme.
 func (s listScreen) updateKey(keyMsg tea.KeyMsg) (listScreen, tea.Cmd) {
 	key := keyMsg.String()
 	mode := s.mode
@@ -372,7 +372,7 @@ func (s listScreen) updateKey(keyMsg tea.KeyMsg) (listScreen, tea.Cmd) {
 		case "esc":
 			s.mode = modeNormal
 			return s, nil
-		case "s":
+		case "y":
 			fallthrough
 		case "enter":
 			return s.applyConfirm()
@@ -422,7 +422,7 @@ func (s listScreen) updateKey(keyMsg tea.KeyMsg) (listScreen, tea.Cmd) {
 			return s, nil
 		}
 		s.mode = modeInputNew
-		s.input.Placeholder = "Titolo"
+		s.input.Placeholder = "Title"
 		s.input.SetValue("")
 		cmd := s.input.Focus()
 		return s, cmd
@@ -433,7 +433,7 @@ func (s listScreen) updateKey(keyMsg tea.KeyMsg) (listScreen, tea.Cmd) {
 			return s, nil
 		}
 		s.mode = modeInputNewFolder
-		s.input.Placeholder = "Cartella"
+		s.input.Placeholder = "Folder"
 		s.input.SetValue("")
 		cmd := s.input.Focus()
 		return s, cmd
@@ -445,9 +445,9 @@ func (s listScreen) updateKey(keyMsg tea.KeyMsg) (listScreen, tea.Cmd) {
 			return s, nil
 		}
 		s.mode = modeInputRename
-		s.input.Placeholder = "Titolo"
+		s.input.Placeholder = "Title"
 		if e.kind == entryFolder {
-			s.input.Placeholder = "Cartella"
+			s.input.Placeholder = "Folder"
 			s.input.SetValue(strings.TrimSuffix(e.title, "/"))
 		} else {
 			s.input.SetValue(e.title)
@@ -495,15 +495,15 @@ func (s listScreen) updateKey(keyMsg tea.KeyMsg) (listScreen, tea.Cmd) {
 			return s, nil
 		}
 		if err := s.st.Restore(n.ID); err != nil {
-			return s.showToast("errore: " + err.Error()), listToastTickCmd()
+			return s.showToast("error: " + err.Error()), listToastTickCmd()
 		}
-		s = s.showToast("nota ripristinata")
+		s = s.showToast("note restored")
 		return s.reload()
 	case "f":
 		fallthrough
 	case "ctrl+f":
 		s.mode = modeInputFilter
-		s.input.Placeholder = "Filtro"
+		s.input.Placeholder = "Filter"
 		s.input.SetValue(s.filter)
 		s.input.CursorEnd()
 		cmd := s.input.Focus()
@@ -512,13 +512,13 @@ func (s listScreen) updateKey(keyMsg tea.KeyMsg) (listScreen, tea.Cmd) {
 	return s, nil
 }
 
-// listDoubleClickThreshold è l'intervallo massimo fra il primo e il secondo
-// click perché siano riconosciuti come doppio click.
+// listDoubleClickThreshold is the maximum interval between the first and second
+// click for them to be recognised as a double click.
 const listDoubleClickThreshold = 400 * time.Millisecond
 
-// listClick è l'ultimo click registrato dalla lista: la nota colpita, la cella
-// (x, y) del terminale e l'istante. Il valore zero vuol dire "nessun click
-// prima".
+// listClick is the last click recorded by the list: the note hit, the terminal
+// cell (x, y) and the instant. The zero value means "no previous
+// click".
 type listClick struct {
 	note int
 	x    int
@@ -526,10 +526,10 @@ type listClick struct {
 	at   time.Time
 }
 
-// isDoubleClick è il riconoscimento puro del doppio click, con l'istante now
-// esplicito per poterlo provare senza orologio: è doppio click se il click
-// precedente esiste, se ha colpito la stessa nota e la stessa cella, e se now
-// non dista più di listDoubleClickThreshold da prev.at.
+// isDoubleClick is the pure recognition of the double click, with the instant now
+// explicit so it can be tested without a clock: it is a double click if the
+// previous click exists, if it hit the same note and the same cell, and if now
+// is no more than listDoubleClickThreshold from prev.at.
 func isDoubleClick(prev listClick, now time.Time, note, x, y int) bool {
 	if prev.at.IsZero() || prev.note != note || prev.x != x || prev.y != y {
 		return false
@@ -538,10 +538,10 @@ func isDoubleClick(prev listClick, now time.Time, note, x, y int) bool {
 	return delta >= 0 && delta <= listDoubleClickThreshold
 }
 
-// planeEntryIndex mappa la riga row del piano costruito da listPlane all'indice
-// della voce che vi compare: ogni voce occupa due righe (titolo e dettaglio) e le
-// voci sono separate da una riga di separazione. Il secondo valore è falso per le
-// righe di separazione e per le righe fuori dal piano.
+// planeEntryIndex maps the row row of the plane built by listPlane to the index
+// of the entry that appears there: every entry occupies two rows (title and detail) and the
+// entries are separated by a separator row. The second value is false for
+// separator rows and for rows outside the plane.
 func planeEntryIndex(count, row int) (int, bool) {
 	if row < 0 {
 		return 0, false
@@ -559,10 +559,10 @@ func planeEntryIndex(count, row int) (int, bool) {
 	return 0, false
 }
 
-// listHitNote mappa la cella (x, y) dello schermo alla nota che vi compare
-// sotto: toglie i margini, salta la riga di titolo e quella del footer,
-// riproduce la finestra di listWindow e cerca la voce nel piano. Il secondo
-// valore è falso quando la cella non cade su nessuna nota.
+// listHitNote maps the screen cell (x, y) to the note that appears
+// under it: it removes the margins, skips the title row and the footer one,
+// reproduces the listWindow window and looks for the entry in the plane. The second
+// value is false when the cell does not fall on any note.
 func (s listScreen) listHitNote(x, y int) (int, bool) {
 	cw, chh := contentW(s.width), contentH(s.height)
 	if marginsActive(s.width, s.height) {
@@ -571,15 +571,15 @@ func (s listScreen) listHitNote(x, y int) (int, bool) {
 	if x < 0 || y < 0 || x >= cw || y >= chh || len(s.notes) == 0 {
 		return 0, false
 	}
-	// La card è centrata: i click fuori dalla sua larghezza non colpiscono
-	// nessuna nota, anche se cadono nell'area contenuto.
+	// The card is centred: clicks outside its width do not hit
+	// any note, even if they fall in the content area.
 	cardW := listCardW(cw)
 	left := cardLeft(cw, cardW)
 	if x < left || x >= left+cardW {
 		return 0, false
 	}
-	// La riga 0 del contenuto è il titolo e l'ultima è il footer: in mezzo c'è
-	// la lista, alta listH righe.
+	// Row 0 of the content is the title and the last is the footer: in between is
+	// the list, listH rows high.
 	listH := listContentH(chh, 1)
 	row := y - 1
 	if row < 0 || row >= listH {
@@ -589,11 +589,11 @@ func (s listScreen) listHitNote(x, y int) (int, bool) {
 	return planeEntryIndex(s.entryCount(), listWindowStart(selFrom, selTo, listH)+row)
 }
 
-// updateMouse gestisce il mouse della lista: solo in modeNormal e solo per il
-// tasto sinistro, un click seleziona la voce (cartella o nota) sotto la cella
-// indicata e un doppio click (secondo click sulla stessa voce e sulla stessa
-// cella entro listDoubleClickThreshold) apre la nota o entra nella cartella.
-// Negli altri modi il mouse è ignorato.
+// updateMouse handles the list's mouse: only in modeNormal and only for the
+// left button, a click selects the entry (folder or note) under the given
+// cell and a double click (second click on the same entry and the same
+// cell within listDoubleClickThreshold) opens the note or enters the folder.
+// In the other modes the mouse is ignored.
 func (s listScreen) updateMouse(m tea.MouseMsg) (listScreen, tea.Cmd) {
 	if s.mode != modeNormal {
 		return s, nil
@@ -612,9 +612,9 @@ func (s listScreen) updateMouse(m tea.MouseMsg) (listScreen, tea.Cmd) {
 	if !double {
 		return s, nil
 	}
-	// Il doppio click apre la voce: una nota si apre nell'editor, una cartella
-	// ci si entra. Il conteggio riparte da zero, così un terzo click non vale
-	// come un altro doppio click.
+	// The double click opens the entry: a note is opened in the editor, a folder
+	// is entered. The count restarts from zero, so a third click does not count
+	// as another double click.
 	s.lastClick = listClick{}
 	entries := s.entries()
 	if idx < 0 || idx >= len(entries) {
@@ -628,7 +628,7 @@ func (s listScreen) updateMouse(m tea.MouseMsg) (listScreen, tea.Cmd) {
 	return s, nil
 }
 
-// applyInput esegue l'operazione della modalità di input corrente.
+// applyInput performs the operation of the current input mode.
 func (s listScreen) applyInput() (listScreen, tea.Cmd) {
 	value := strings.TrimSpace(s.input.Value())
 
@@ -641,17 +641,17 @@ func (s listScreen) applyInput() (listScreen, tea.Cmd) {
 	}
 
 	if value == "" {
-		return s.showToast("il nome non può essere vuoto"), listToastTickCmd()
+		return s.showToast("the name cannot be empty"), listToastTickCmd()
 	}
 
 	if s.mode == modeInputNewFolder {
 		folder, err := s.st.CreateFolder(value, s.folderID)
 		if err != nil {
-			return s.showToast("errore: " + err.Error()), listToastTickCmd()
+			return s.showToast("error: " + err.Error()), listToastTickCmd()
 		}
 		s.mode = modeNormal
 		s.input.Blur()
-		s = s.showToast("cartella creata")
+		s = s.showToast("folder created")
 		s = s.reloadAndSelectEntry(entryFolder, folder.ID)
 		return s, listToastTickCmd()
 	}
@@ -659,14 +659,14 @@ func (s listScreen) applyInput() (listScreen, tea.Cmd) {
 	if s.mode == modeInputNew {
 		note, err := s.st.CreateIn(value, s.folderID)
 		if err != nil {
-			return s.showToast("errore: " + err.Error()), listToastTickCmd()
+			return s.showToast("error: " + err.Error()), listToastTickCmd()
 		}
 		s.mode = modeNormal
 		s.input.Blur()
-		// La nota nuova resta nella lista: si apre solo con invio. La selezione
-		// si sposta sulla nota appena creata, che lo store restituisce in cima
-		// perché è la più recente.
-		s = s.showToast("nota creata")
+		// The new note stays in the list: it is opened only with enter. The selection
+		// moves to the note just created, which the store returns at the top
+		// because it is the most recent.
+		s = s.showToast("note created")
 		s = s.reloadAndSelect(note.ID)
 		return s, listToastTickCmd()
 	}
@@ -684,14 +684,14 @@ func (s listScreen) applyInput() (listScreen, tea.Cmd) {
 		err = s.st.Rename(e.id, value)
 	}
 	if err != nil {
-		return s.showToast("errore: " + err.Error()), listToastTickCmd()
+		return s.showToast("error: " + err.Error()), listToastTickCmd()
 	}
 	s.mode = modeNormal
 	s.input.Blur()
 	return s.reload()
 }
 
-// applyConfirm esegue l'operazione distruttiva confermata dal popup.
+// applyConfirm performs the destructive operation confirmed by the popup.
 func (s listScreen) applyConfirm() (listScreen, tea.Cmd) {
 	purge := s.mode == modeConfirmPurge
 	s.mode = modeNormal
@@ -713,19 +713,19 @@ func (s listScreen) applyConfirm() (listScreen, tea.Cmd) {
 
 	switch {
 	case err != nil:
-		s = s.showToast("errore: " + err.Error())
+		s = s.showToast("error: " + err.Error())
 	case purge:
-		s = s.showToast("nota eliminata")
+		s = s.showToast("note deleted")
 	case e.kind == entryFolder:
-		s = s.showToast("cartella spostata nel cestino")
+		s = s.showToast("folder moved to the trash")
 	default:
-		s = s.showToast("nota spostata nel cestino")
+		s = s.showToast("note moved to the trash")
 	}
 	return s.reload()
 }
 
-// listContentH è l'altezza delle righe della lista per un'altezza di contenuto
-// ch e un titolo alto titleH righe: resta spazio per la riga del footer.
+// listContentH is the height of the list rows for a content height
+// ch and a title titleH rows high: space is left for the footer row.
 func listContentH(ch, titleH int) int {
 	h := ch - titleH - 1
 	if h < 1 {
@@ -734,13 +734,13 @@ func listContentH(ch, titleH int) int {
 	return h
 }
 
-// listTitle è la riga di titolo della lista: "NOTE" con il percorso delle
-// cartelle in cui si è scesi, oppure "CESTINO" nella vista del cestino. È
-// centrata su cw colonne e resa con theme.BannerAcc.
+// listTitle is the title row of the list: "NOTES" with the path of the
+// folders descended into, or "TRASH" in the trash view. It is
+// centred over cw columns and rendered with theme.BannerAcc.
 func (s listScreen) listTitle(cw int) string {
-	parts := []string{"NOTE"}
+	parts := []string{"NOTES"}
 	if s.showTrash {
-		parts = []string{"CESTINO"}
+		parts = []string{"TRASH"}
 	} else {
 		for _, f := range s.path {
 			parts = append(parts, f.Name)
@@ -749,29 +749,29 @@ func (s listScreen) listTitle(cw int) string {
 	return centerStyled(strings.Join(parts, " › "), cw, theme.BannerAcc)
 }
 
-// listFooterHint è il testo del footer della lista.
-const listFooterHint = "↑↓ muovi · invio apri · ← indietro · n nota · c cartella · ? aiuto"
+// listFooterHint is the text of the list footer.
+const listFooterHint = "↑↓ move · enter open · ← back · n note · c folder · ? help"
 
-// listFooter rende il footer della lista: una sola riga troncata a cw colonne,
-// in colore attenuato senza Faint.
+// listFooter renders the list footer: a single row truncated to cw columns,
+// in dimmed colour without Faint.
 func listFooter(cw int) string {
 	return footerLine(listFooterHint, cw, theme.DimText)
 }
 
-// noteDetail è la riga "data · N parole" di una nota, letta dai campi Title,
-// Body e UpdatedAt già presenti nello store.
+// noteDetail is the row "date · N words" of a note, read from the Title,
+// Body and UpdatedAt fields already present in the store.
 func noteDetail(n store.Note) string {
 	words := len(strings.Fields(n.Body))
-	count := strconv.Itoa(words) + " parole"
+	count := strconv.Itoa(words) + " words"
 	if words == 1 {
-		count = "1 parola"
+		count = "1 word"
 	}
 	return n.UpdatedAt.Format("02/01/2006") + " · " + count
 }
 
-// listCardW è la larghezza della card che contiene le note: al massimo 60
-// colonne, e mai più della larghezza disponibile, così su terminali stretti la
-// card occupa tutto lo spazio.
+// listCardW is the width of the card that contains the notes: at most 60
+// columns, and never more than the available width, so on narrow terminals the
+// card takes all the space.
 func listCardW(cw int) int {
 	if cw < 60 {
 		return cw
@@ -779,8 +779,8 @@ func listCardW(cw int) int {
 	return 60
 }
 
-// cardLeft è lo scostamento da cui comincia la card, per centrarla su cw
-// colonne.
+// cardLeft is the offset the card starts from, to centre it over cw
+// columns.
 func cardLeft(cw, cardW int) int {
 	if cardW >= cw {
 		return 0
@@ -788,10 +788,10 @@ func cardLeft(cw, cardW int) int {
 	return (cw - cardW) / 2
 }
 
-// cardText centra text su cardW colonne, troncandolo se serve, e lo rende con lo
-// stile st. Titolo e metadati di una nota risultano così centrati nella card,
-// senza alcun segno di selezione a sinistra: la selezione si vede solo dallo
-// stile.
+// cardText centres text over cardW columns, truncating it if needed, and renders it with
+// the style st. The title and metadata of a note thus come out centred in the card,
+// without any selection mark on the left: the selection is seen only from the
+// style.
 func cardText(text string, st lipgloss.Style, cardW int) string {
 	if cardW <= 0 {
 		return ""
@@ -803,8 +803,8 @@ func cardText(text string, st lipgloss.Style, cardW int) string {
 	return strings.Repeat(" ", left) + st.Render(plain) + strings.Repeat(" ", right)
 }
 
-// listSeparator è la riga che divide due note: una linea di ─ larga quanto la
-// card, attenuata.
+// listSeparator is the row that divides two notes: a line of ─ as wide as the
+// card, dimmed.
 func listSeparator(cardW int) string {
 	if cardW <= 0 {
 		return ""
@@ -812,10 +812,10 @@ func listSeparator(cardW int) string {
 	return theme.DimText.Render(strings.Repeat("─", cardW))
 }
 
-// titleLine rende la riga di titolo della voce idx, centrata nella card: in
-// evidenza per la selezionata, attenuata per le altre, con gli stili del cestino
-// nella vista cestino. Le cartelle hanno uno stile proprio, così si distinguono
-// dalle note a colpo d'occhio.
+// titleLine renders the title row of entry idx, centred in the card: highlighted
+// for the selected one, dimmed for the others, with the trash styles
+// in the trash view. Folders have a style of their own, so they stand out
+// from notes at a glance.
 func (s listScreen) titleLine(idx, cardW int, entries []listEntry) string {
 	e := entries[idx]
 	st := theme.DimText
@@ -834,9 +834,9 @@ func (s listScreen) titleLine(idx, cardW int, entries []listEntry) string {
 	return cardText(e.title, st, cardW)
 }
 
-// detailLine rende la seconda riga della voce idx, centrata nella card: numero
-// di note per le cartelle, data e parole per le note. È attenuata su tutte le
-// voci, che abbiano già il titolo in evidenza o in tono basso.
+// detailLine renders the second row of entry idx, centred in the card: number
+// of notes for folders, date and words for notes. It is dimmed on all
+// entries, whether their title is highlighted or in a low tone.
 func (s listScreen) detailLine(idx, cardW int, entries []listEntry) string {
 	st := theme.DimText
 	if s.showTrash {
@@ -845,10 +845,10 @@ func (s listScreen) detailLine(idx, cardW int, entries []listEntry) string {
 	return cardText(entries[idx].detail, st, cardW)
 }
 
-// listPlane costruisce il piano di righe della lista: ogni voce (cartella o
-// nota) occupa 2 righe, titolo e dettaglio, e le voci sono separate da una riga
-// di separazione. Tutte le righe sono larghe listCardW(cw). Restituisce anche
-// l'intervallo di righe occupato dalla voce selezionata.
+// listPlane builds the plane of rows of the list: every entry (folder or
+// note) occupies 2 rows, title and detail, and the entries are separated by a
+// separator row. All the rows are listCardW(cw) wide. It also returns
+// the range of rows occupied by the selected entry.
 func (s listScreen) listPlane(cw int) (plane []string, selFrom, selTo int) {
 	cardW := listCardW(cw)
 	entries := s.entries()
@@ -866,8 +866,8 @@ func (s listScreen) listPlane(cw int) (plane []string, selFrom, selTo int) {
 	return plane, selFrom, selTo
 }
 
-// listWindowStart è la riga del piano che finisce nella prima riga della
-// finestra alta listH righe: centra verticalmente l'intervallo della selezione.
+// listWindowStart is the row of the plane that ends up in the first row of the
+// window listH rows high: it vertically centres the range of the selection.
 func listWindowStart(selFrom, selTo, listH int) int {
 	if selTo < selFrom {
 		return 0
@@ -875,8 +875,8 @@ func listWindowStart(selFrom, selTo, listH int) int {
 	return selFrom - (listH-(selTo-selFrom+1))/2
 }
 
-// listWindow ritaglia il piano su listH righe centrando verticalmente
-// l'intervallo della selezione; le righe fuori dal piano restano vuote.
+// listWindow crops the plane to listH rows vertically centring
+// the range of the selection; the rows outside the plane stay empty.
 func listWindow(plane []string, selFrom, selTo, listH int) []string {
 	rows := make([]string, listH)
 	start := listWindowStart(selFrom, selTo, listH)
@@ -888,8 +888,8 @@ func listWindow(plane []string, selFrom, selTo, listH int) []string {
 	return rows
 }
 
-// centerStyled centra plain su cw colonne, con spazi a sinistra, e lo rende con
-// lo stile st.
+// centerStyled centres plain over cw columns, with spaces on the left, and renders it with
+// the style st.
 func centerStyled(plain string, cw int, st lipgloss.Style) string {
 	plain = truncatePlain(plain, cw)
 	w := lipgloss.Width(plain)
@@ -904,55 +904,55 @@ func centerStyled(plain string, cw int, st lipgloss.Style) string {
 	return strings.Repeat(" ", left) + st.Render(plain) + strings.Repeat(" ", right)
 }
 
-// boxInput è il contenuto del popup di input: il titolo della modalità e la
-// riga del textinput.
+// boxInput is the content of the input popup: the title of the mode and the
+// textinput row.
 func (s listScreen) boxInput() string {
-	title := "Nuova nota"
+	title := "New note"
 	switch s.mode {
 	case modeInputRename:
-		title = "Rinomina"
+		title = "Rename"
 	case modeInputFilter:
-		title = "Filtra"
+		title = "Filter"
 	case modeInputNewFolder:
-		title = "Nuova cartella"
+		title = "New folder"
 	}
 	return theme.DimText.Render(title) + "\n" + s.input.View()
 }
 
-// boxConfirm è il contenuto del popup di conferma dell'operazione distruttiva.
+// boxConfirm is the content of the confirmation popup of the destructive operation.
 func (s listScreen) boxConfirm() string {
-	question := "Cestinare la nota? (s/n)"
+	question := "Move the note to the trash? (y/n)"
 	if e, ok := s.currentEntry(); ok && e.kind == entryFolder {
-		question = "Cestinare la cartella e tutto il suo contenuto? (s/n)"
+		question = "Move the folder and all its contents to the trash? (y/n)"
 	}
 	if s.mode == modeConfirmPurge {
-		question = "Eliminare definitivamente? (s/n)"
+		question = "Delete permanently? (y/n)"
 	}
 	return theme.DimText.Render(question)
 }
 
-// View rende la schermata lista: la riga di titolo, il piano di righe centrato
-// sulla selezione, il footer; sopra il tutto il popup della modalità corrente e
-// il toast.
+// View renders the list screen: the title row, the plane of rows centred
+// on the selection, the footer; on top of it all the popup of the current mode and
+// the toast.
 func (s listScreen) View() string {
 	cw, chh := contentW(s.width), contentH(s.height)
 
-	// Il titolo occupa una riga, il footer l'ultima: il resto è piano di righe.
+	// The title occupies one row, the footer the last: the rest is the plane of rows.
 	listH := listContentH(chh, 1)
 
 	var rows []string
 	if s.entryCount() == 0 {
-		msg := "Nessuna nota — n per crearne una"
+		msg := "No notes — press n to create one"
 		if s.showTrash {
-			msg = "Cestino vuoto"
+			msg = "Trash is empty"
 		}
 		rows = make([]string, listH)
 		rows[listH/2] = centerStyled(msg, cw, theme.DimText)
 	} else {
 		plane, from, to := s.listPlane(cw)
 		rows = listWindow(plane, from, to, listH)
-		// La card è centrata orizzontalmente: ogni riga del piano viene
-		// scostata di cardLeft e completata fino a cw colonne.
+		// The card is centred horizontally: every row of the plane is
+		// shifted by cardLeft and padded up to cw columns.
 		left := strings.Repeat(" ", cardLeft(cw, listCardW(cw)))
 		blank := strings.Repeat(" ", cw)
 		for i, r := range rows {

@@ -1,7 +1,7 @@
-// Package theme raccoglie la palette condivisa dell'applicazione: gli stili
-// pieni usati per il testo in evidenza, quelli attenuati usati per le righe
-// non in focus, oltre agli stili di servizio (reverse, errore, toast, banner,
-// selezione, testo attenuato e cestino).
+// Package theme collects the application's shared palette: the full styles
+// used for highlighted text, the dimmed ones used for lines that are not in
+// focus, plus the utility styles (reverse, error, toast, banner, selection,
+// dimmed text and trash).
 package theme
 
 import (
@@ -10,19 +10,19 @@ import (
 	"nook/internal/markdown"
 )
 
-// ac costruisce un colore adaptive: Light per i terminali chiari, Dark per
-// quelli scuri.
+// ac builds an adaptive colour: Light for light terminals, Dark for dark
+// ones.
 func ac(light, dark string) lipgloss.AdaptiveColor {
 	return lipgloss.AdaptiveColor{Light: light, Dark: dark}
 }
 
-// spec descrive uno stile del markdown in forma di dati: i colori sono indici
-// ANSI 256 (stringa vuota = nessun colore), gli attributi sono flag. La tabella
-// serve a generare sia gli stili pieni sia le scale attenuate e dissolte, senza
-// duplicare a mano ogni variante.
+// spec describes a markdown style as data: colours are ANSI 256 indices
+// (empty string = no colour), attributes are flags. The table is used to
+// generate both the full styles and the dimmed and faded scales, without
+// duplicating every variant by hand.
 type spec struct {
-	light, dark     string // primo piano
-	bgLight, bgDark string // sfondo
+	light, dark     string // foreground
+	bgLight, bgDark string // background
 	bold            bool
 	italic          bool
 	strike          bool
@@ -30,7 +30,7 @@ type spec struct {
 	faint           bool
 }
 
-// fullSpecs è la tabella degli stili pieni.
+// fullSpecs is the table of full styles.
 var fullSpecs = map[markdown.Style]spec{
 	markdown.StyleHeading1:  {light: "33", dark: "69", bold: true},
 	markdown.StyleHeading2:  {light: "40", dark: "75", bold: true},
@@ -53,8 +53,8 @@ var fullSpecs = map[markdown.Style]spec{
 	markdown.StyleNone:      {},
 }
 
-// dimSpecs è la tabella degli stili attenuati: le righe senza focus non usano
-// solo Faint, ma un primo piano più spento.
+// dimSpecs is the table of dimmed styles: lines without focus do not just use
+// Faint, they use a duller foreground.
 var dimSpecs = map[markdown.Style]spec{
 	markdown.StyleHeading1:  {light: "117", dark: "24", bold: true, faint: true},
 	markdown.StyleHeading2:  {light: "122", dark: "28", bold: true, faint: true},
@@ -77,14 +77,14 @@ var dimSpecs = map[markdown.Style]spec{
 	markdown.StyleNone:      {light: "250", dark: "241", faint: true},
 }
 
-// Styles associa ogni stile del markdown alla sua resa piena.
+// Styles maps every markdown style to its full rendering.
 var Styles = build(fullSpecs)
 
-// DimStyles associa ogni stile del markdown alla sua resa attenuata: le righe
-// che non hanno il focus non usano Faint, ma un Foreground più spento.
+// DimStyles maps every markdown style to its dimmed rendering: lines that do
+// not have focus do not use Faint, but a duller Foreground.
 var DimStyles = build(dimSpecs)
 
-// build traduce una tabella di spec in stili lipgloss.
+// build turns a spec table into lipgloss styles.
 func build(specs map[markdown.Style]spec) map[markdown.Style]lipgloss.Style {
 	out := make(map[markdown.Style]lipgloss.Style, len(specs))
 	for st, s := range specs {
@@ -116,31 +116,31 @@ func build(specs map[markdown.Style]spec) map[markdown.Style]lipgloss.Style {
 }
 
 var (
-	// Rev evidenzia il carattere sotto il cursore.
+	// Rev highlights the character under the cursor.
 	Rev = lipgloss.NewStyle().Reverse(true)
-	// Error è lo stile dei messaggi di errore.
+	// Error is the style of error messages.
 	Error = lipgloss.NewStyle().Foreground(ac("124", "9"))
-	// Toast è lo stile del messaggio temporaneo sovrapposto: testo in accento,
-	// grassetto, senza sfondo né riquadro, coerente con il resto dell'interfaccia.
+	// Toast is the style of the temporary overlaid message: accent text,
+	// bold, no background or box, consistent with the rest of the interface.
 	Toast = lipgloss.NewStyle().Bold(true).Foreground(ac("25", "81"))
-	// ToastError è lo stile del toast di errore, nello stesso formato ma in rosso.
+	// ToastError is the style of the error toast, same format but in red.
 	ToastError = lipgloss.NewStyle().Bold(true).Foreground(ac("124", "9"))
-	// BannerAcc è lo stile dell'accento del banner.
+	// BannerAcc is the style of the banner accent.
 	BannerAcc = lipgloss.NewStyle().Bold(true).Foreground(ac("25", "69"))
-	// Selected è lo stile della riga selezionata.
+	// Selected is the style of the selected row.
 	Selected = lipgloss.NewStyle().Bold(true)
-	// DimText è lo stile del testo attenuato: l'attenuazione è solo nel colore.
+	// DimText is the style of dimmed text: the dimming is in the colour only.
 	DimText = lipgloss.NewStyle().Foreground(ac("250", "241"))
-	// TrashDim è lo stile delle note nel cestino, non selezionate.
+	// TrashDim is the style of unselected notes in the trash.
 	TrashDim = lipgloss.NewStyle().Foreground(ac("124", "88")).Faint(true)
-	// TrashSel è lo stile della nota del cestino selezionata.
+	// TrashSel is the style of the selected trash note.
 	TrashSel = lipgloss.NewStyle().Foreground(ac("124", "9")).Bold(true)
-	// FolderDim è lo stile delle cartelle non selezionate: tinta spenta, così la
-	// cartella selezionata si distingue anche senza sottolineatura.
+	// FolderDim is the style of unselected folders: a muted tint, so the
+	// selected folder stands out even without underlining.
 	FolderDim = lipgloss.NewStyle().Foreground(ac("103", "60")).Bold(true)
-	// FolderSel è lo stile della cartella selezionata: colore più acceso e
-	// grassetto, senza sottolineatura.
+	// FolderSel is the style of the selected folder: a brighter colour and
+	// bold, no underline.
 	FolderSel = lipgloss.NewStyle().Foreground(ac("25", "117")).Bold(true)
-	// Selection è lo stile del testo selezionato nell'editor.
+	// Selection is the style of selected text in the editor.
 	Selection = lipgloss.NewStyle().Foreground(ac("235", "232")).Background(ac("223", "238"))
 )

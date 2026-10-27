@@ -9,9 +9,9 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// TestDebugKeyLog verifica la diagnostica dei tasti: con MDEDIT_DEBUG_KEYS=1
-// logKey appende il KeyMsg a ~/.mdedit/keys.log, mentre con la variabile
-// disattivata non crea alcun file.
+// TestDebugKeyLog checks key diagnostics: with MDEDIT_DEBUG_KEYS=1
+// logKey appends the KeyMsg to ~/.mdedit/keys.log, while with the variable
+// off it creates no file.
 func TestDebugKeyLog(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
@@ -24,26 +24,26 @@ func TestDebugKeyLog(t *testing.T) {
 
 	data, err := os.ReadFile(path)
 	if err != nil {
-		t.Fatalf("lettura %s: %v", path, err)
+		t.Fatalf("reading %s: %v", path, err)
 	}
 	content := string(data)
 	if !strings.Contains(content, "Type=") {
-		t.Fatalf("keys.log = %q, atteso contenere %q", content, "Type=")
+		t.Fatalf("keys.log = %q, want it to contain %q", content, "Type=")
 	}
 	if !strings.Contains(content, "String=") {
-		t.Fatalf("keys.log = %q, atteso contenere %q", content, "String=")
+		t.Fatalf("keys.log = %q, want it to contain %q", content, "String=")
 	}
 
-	// Con la diagnostica disattivata non deve nascere nessun file: si parte
-	// da una HOME pulita, senza la directory creata dal primo logKey.
+	// With diagnostics off no file must appear: we start
+	// from a clean HOME, without the directory created by the first logKey.
 	if err := os.RemoveAll(dir); err != nil {
-		t.Fatalf("rimozione %s: %v", dir, err)
+		t.Fatalf("removing %s: %v", dir, err)
 	}
 
 	t.Setenv(debugKeysEnv, "0")
 	logKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("x")})
 
 	if _, err := os.Stat(path); !os.IsNotExist(err) {
-		t.Fatalf("keys.log esiste con la diagnostica disattivata (stat err = %v)", err)
+		t.Fatalf("keys.log exists with diagnostics off (stat err = %v)", err)
 	}
 }

@@ -9,9 +9,9 @@ import (
 	"nook/internal/theme"
 )
 
-// selectionOnLine restituisce l'intervallo di rune selezionato nella riga line,
-// con l'estremo superiore escluso. Il secondo valore è falso quando la riga non
-// ha nulla di selezionato.
+// selectionOnLine returns the range of runes selected on line line,
+// with the upper bound excluded. The second value is false when the line
+// has nothing selected.
 func (e Editor) selectionOnLine(line int) (from, to int, ok bool) {
 	if !e.selecting || line < 0 || line >= len(e.lines) {
 		return 0, 0, false
@@ -40,9 +40,9 @@ func (e Editor) selectionOnLine(line int) (from, to int, ok bool) {
 	return from, to, true
 }
 
-// SetSelection imposta cursore e ancora in un colpo solo: serve al trascinamento
-// col mouse, che fissa l'ancora dove si è premuto e porta il cursore dove si è
-// trascinato.
+// SetSelection sets cursor and anchor in one go: it is used by dragging
+// with the mouse, which sets the anchor where the button was pressed and brings the cursor to where it was
+// dragged.
 func (e Editor) SetSelection(anchorLine, anchorCol, line, col int) Editor {
 	e.selecting = true
 	e.anchorLine = clampLine(anchorLine, len(e.lines))
@@ -54,7 +54,7 @@ func (e Editor) SetSelection(anchorLine, anchorCol, line, col int) Editor {
 	return e
 }
 
-// clampLine riporta una riga dentro i limiti del documento.
+// clampLine brings a line back within the limits of the document.
 func clampLine(line, count int) int {
 	if line < 0 {
 		return 0
@@ -65,8 +65,8 @@ func clampLine(line, count int) int {
 	return line
 }
 
-// SelectedText restituisce il testo selezionato, con le righe separate da "\n".
-// Il secondo valore è falso quando non c'è selezione.
+// SelectedText returns the selected text, with lines separated by "\n".
+// The second value is false when there is no selection.
 func (e Editor) SelectedText() (string, bool) {
 	if !e.selecting {
 		return "", false
@@ -93,7 +93,7 @@ func (e Editor) SelectedText() (string, bool) {
 	return strings.Join(parts, "\n"), true
 }
 
-// minInt restituisce il minore dei due interi.
+// minInt returns the smaller of the two integers.
 func minInt(a, b int) int {
 	if a < b {
 		return a
@@ -101,8 +101,8 @@ func minInt(a, b int) int {
 	return b
 }
 
-// runeRangeToBytes traduce l'intervallo di rune [from, to) della stringa s nei
-// corrispondenti offset in byte.
+// runeRangeToBytes translates the rune range [from, to) of the string s into the
+// corresponding byte offsets.
 func runeRangeToBytes(s string, from, to int) (int, int) {
 	rs := []rune(s)
 	if from < 0 {
@@ -120,14 +120,14 @@ func runeRangeToBytes(s string, from, to int) (int, int) {
 	return len(string(rs[:from])), len(string(rs[:to]))
 }
 
-// renderSegmentWithSelection rende un segmento markdown con la sua palette,
-// evidenziando la parte che cade dentro l'intervallo selezionato della riga,
-// espresso in offset di byte sul testo grezzo [selFrom, selTo).
+// renderSegmentWithSelection renders a markdown segment with its palette,
+// highlighting the part that falls inside the selected range of the line,
+// expressed as byte offsets on the raw text [selFrom, selTo).
 //
-// La corrispondenza fra byte grezzi e caratteri visibili del segmento è
-// proporzionale: i marcatori markdown non compaiono a video, quindi il testo del
-// segmento è più corto del suo span di sorgente e non esiste una mappa esatta
-// carattere per carattere.
+// The correspondence between raw bytes and visible characters of the segment is
+// proportional: markdown markers do not appear on screen, so the text of the
+// segment is shorter than its source span and there is no exact
+// character-by-character map.
 func renderSegmentWithSelection(seg markdown.Segment, selFrom, selTo int, st lipgloss.Style) string {
 	start, end, ok := segmentOverlap(seg, selFrom, selTo)
 	if !ok {
@@ -139,8 +139,8 @@ func renderSegmentWithSelection(seg markdown.Segment, selFrom, selTo int, st lip
 		st.Render(string(runes[end:]))
 }
 
-// segmentOverlap traduce la sovrapposizione fra lo span di sorgente del
-// segmento e la selezione in indici di runa dentro seg.Text.
+// segmentOverlap translates the overlap between the source span of the
+// segment and the selection into rune indices inside seg.Text.
 func segmentOverlap(seg markdown.Segment, selFrom, selTo int) (start, end int, ok bool) {
 	a, b := seg.RawFrom, seg.RawTo
 	if b <= a || selTo <= a || selFrom >= b {
@@ -165,9 +165,9 @@ func segmentOverlap(seg markdown.Segment, selFrom, selTo int) (start, end int, o
 	start = (lo - a) * n / span
 	end = (hi - a) * n / span
 	if end <= start {
-		// Sovrapposizione troppo piccola per un carattere: si evidenzia comunque
-		// quello più vicino, così la selezione resta visibile anche dentro i
-		// marcatori.
+		// Overlap too small for a character: the nearest one is highlighted
+		// anyway, so the selection stays visible even inside the
+		// markers.
 		if start < n {
 			end = start + 1
 		} else {

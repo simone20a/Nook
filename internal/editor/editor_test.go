@@ -13,25 +13,25 @@ import (
 	"nook/internal/theme"
 )
 
-// TestFocusRowCentered verifica che la riga del cursore stia al centro dello schermo.
+// TestFocusRowCentered checks that the cursor's line is in the middle of the screen.
 func TestFocusRowCentered(t *testing.T) {
 	e := New([]string{"a", "b", "c", "d", "e"}, 20, 5)
 
 	if got := e.focusRow(); got != 2 {
-		t.Fatalf("focusRow() = %d, atteso 2", got)
+		t.Fatalf("focusRow() = %d, want 2", got)
 	}
 	if got := e.docIndexForRow(0); got != -2 {
-		t.Fatalf("docIndexForRow(0) = %d, atteso -2", got)
+		t.Fatalf("docIndexForRow(0) = %d, want -2", got)
 	}
 	if got := e.docIndexForRow(2); got != 0 {
-		t.Fatalf("docIndexForRow(2) = %d, atteso 0", got)
+		t.Fatalf("docIndexForRow(2) = %d, want 0", got)
 	}
 	if got := e.docIndexForRow(4); got != 2 {
-		t.Fatalf("docIndexForRow(4) = %d, atteso 2", got)
+		t.Fatalf("docIndexForRow(4) = %d, want 2", got)
 	}
 }
 
-// TestVerticalScroll verifica lo scorrimento verticale con il cursore.
+// TestVerticalScroll checks vertical scrolling with the cursor.
 func TestVerticalScroll(t *testing.T) {
 	e := New([]string{"a", "b", "c", "d", "e"}, 20, 5)
 
@@ -39,50 +39,50 @@ func TestVerticalScroll(t *testing.T) {
 	e = e.moveDown()
 
 	if e.cursorLine != 2 {
-		t.Fatalf("cursorLine = %d, atteso 2", e.cursorLine)
+		t.Fatalf("cursorLine = %d, want 2", e.cursorLine)
 	}
 	if got := e.docIndexForRow(2); got != 2 {
-		t.Fatalf("docIndexForRow(2) = %d, atteso 2", got)
+		t.Fatalf("docIndexForRow(2) = %d, want 2", got)
 	}
 }
 
-// TestHScroll verifica lo scorrimento orizzontale.
+// TestHScroll checks horizontal scrolling.
 func TestHScroll(t *testing.T) {
 	e := New([]string{"abcdefghij"}, 5, 3)
 
 	e = e.moveEnd()
 	if e.cursorCol != 10 {
-		t.Fatalf("cursorCol dopo moveEnd = %d, atteso 10", e.cursorCol)
+		t.Fatalf("cursorCol after moveEnd = %d, want 10", e.cursorCol)
 	}
 	if e.hScroll != 6 {
-		t.Fatalf("hScroll dopo moveEnd = %d, atteso 6", e.hScroll)
+		t.Fatalf("hScroll after moveEnd = %d, want 6", e.hScroll)
 	}
 
 	e = e.moveHome()
 	if e.hScroll != 0 {
-		t.Fatalf("hScroll dopo moveHome = %d, atteso 0", e.hScroll)
+		t.Fatalf("hScroll after moveHome = %d, want 0", e.hScroll)
 	}
 }
 
-// TestClampCol verifica che la colonna sia riportata entro la fine della riga.
+// TestClampCol checks that the column is brought back within the end of the line.
 func TestClampCol(t *testing.T) {
 	e := New([]string{"abc", "d"}, 20, 3)
 
 	e = e.moveEnd()
 	if e.cursorCol != 3 {
-		t.Fatalf("cursorCol dopo moveEnd = %d, atteso 3", e.cursorCol)
+		t.Fatalf("cursorCol after moveEnd = %d, want 3", e.cursorCol)
 	}
 
 	e = e.moveDown()
 	if e.cursorLine != 1 {
-		t.Fatalf("cursorLine = %d, atteso 1", e.cursorLine)
+		t.Fatalf("cursorLine = %d, want 1", e.cursorLine)
 	}
 	if e.cursorCol != 1 {
-		t.Fatalf("cursorCol = %d, atteso 1", e.cursorCol)
+		t.Fatalf("cursorCol = %d, want 1", e.cursorCol)
 	}
 }
 
-// TestDeleteSelection verifica la cancellazione del testo selezionato.
+// TestDeleteSelection checks the deletion of the selected text.
 func TestDeleteSelection(t *testing.T) {
 	e := New([]string{"hello world"}, 20, 3)
 	e.selecting = true
@@ -94,83 +94,83 @@ func TestDeleteSelection(t *testing.T) {
 	e.deleteSelection()
 
 	if e.lines[0] != " world" {
-		t.Fatalf("lines[0] = %q, atteso %q", e.lines[0], " world")
+		t.Fatalf("lines[0] = %q, want %q", e.lines[0], " world")
 	}
 	if e.cursorCol != 0 {
-		t.Fatalf("cursorCol = %d, atteso 0", e.cursorCol)
+		t.Fatalf("cursorCol = %d, want 0", e.cursorCol)
 	}
 	if e.selecting {
-		t.Fatal("selecting = true, atteso false")
+		t.Fatal("selecting = true, want false")
 	}
 }
 
-// TestToggleBoldInserisce verifica l'inserimento dei marcatori del grassetto.
-func TestToggleBoldInserisce(t *testing.T) {
-	e := New([]string{"ciao"}, 20, 3)
+// TestToggleBoldInserts checks the insertion of the bold markers.
+func TestToggleBoldInserts(t *testing.T) {
+	e := New([]string{"hello"}, 20, 3)
 	e.cursorCol = 2
 
 	e.toggleBold()
 
-	if e.lines[0] != "ci****ao" {
-		t.Fatalf("lines[0] = %q, atteso %q", e.lines[0], "ci****ao")
+	if e.lines[0] != "he****llo" {
+		t.Fatalf("lines[0] = %q, want %q", e.lines[0], "he****llo")
 	}
 	if e.cursorCol != 4 {
-		t.Fatalf("cursorCol = %d, atteso 4", e.cursorCol)
+		t.Fatalf("cursorCol = %d, want 4", e.cursorCol)
 	}
 }
 
-// TestToggleBoldRimuove verifica la rimozione dei marcatori del grassetto.
-func TestToggleBoldRimuove(t *testing.T) {
-	e := New([]string{"**ciao**"}, 20, 3)
+// TestToggleBoldRemoves checks the removal of the bold markers.
+func TestToggleBoldRemoves(t *testing.T) {
+	e := New([]string{"**hello**"}, 20, 3)
 	e.cursorCol = 4
 
 	e.toggleBold()
 
-	if e.lines[0] != "ciao" {
-		t.Fatalf("lines[0] = %q, atteso %q", e.lines[0], "ciao")
+	if e.lines[0] != "hello" {
+		t.Fatalf("lines[0] = %q, want %q", e.lines[0], "hello")
 	}
 }
 
-// TestSetHeading verifica l'aggiunta di un'intestazione.
+// TestSetHeading checks the addition of a heading.
 func TestSetHeading(t *testing.T) {
-	e := New([]string{"titolo"}, 20, 3)
+	e := New([]string{"title"}, 20, 3)
 
 	e.setHeading(1)
 
-	if e.lines[0] != "# titolo" {
-		t.Fatalf("lines[0] = %q, atteso %q", e.lines[0], "# titolo")
+	if e.lines[0] != "# title" {
+		t.Fatalf("lines[0] = %q, want %q", e.lines[0], "# title")
 	}
 }
 
-// TestSetHeadingToglie verifica la rimozione di un'intestazione dello stesso livello.
-func TestSetHeadingToglie(t *testing.T) {
-	e := New([]string{"## titolo"}, 20, 3)
+// TestSetHeadingRemoves checks the removal of a heading of the same level.
+func TestSetHeadingRemoves(t *testing.T) {
+	e := New([]string{"## title"}, 20, 3)
 
 	e.setHeading(2)
 
-	if e.lines[0] != "titolo" {
-		t.Fatalf("lines[0] = %q, atteso %q", e.lines[0], "titolo")
+	if e.lines[0] != "title" {
+		t.Fatalf("lines[0] = %q, want %q", e.lines[0], "title")
 	}
 }
 
-// TestTruncateStyled verifica il troncamento consapevole delle celle larghe e
-// delle sequenze ANSI: il risultato è misurato dopo aver tolto i codici colore.
+// TestTruncateStyled checks truncation that is aware of wide cells and
+// ANSI sequences: the result is measured after stripping the colour codes.
 func TestTruncateStyled(t *testing.T) {
 	if got := truncate("abcdefghij", 5); got != "abcd…" {
-		t.Fatalf("truncate(%q, 5) = %q, atteso %q", "abcdefghij", got, "abcd…")
+		t.Fatalf("truncate(%q, 5) = %q, want %q", "abcdefghij", got, "abcd…")
 	}
 
 	if got := ansi.Strip(truncate("日本語", 3)); got != "日…" {
-		t.Fatalf("truncate(%q, 3) = %q, atteso %q", "日本語", got, "日…")
+		t.Fatalf("truncate(%q, 3) = %q, want %q", "日本語", got, "日…")
 	}
 
 	rs := theme.Styles[markdown.StyleBold].Render("abc")
 	if got := ansi.Strip(truncate(rs, 2)); got != "a…" {
-		t.Fatalf("truncate(stile grassetto %q, 2) = %q, atteso %q", rs, got, "a…")
+		t.Fatalf("truncate(bold style %q, 2) = %q, want %q", rs, got, "a…")
 	}
 }
 
-// TestPrefixWidth verifica la larghezza del prefisso di blocco delle righe.
+// TestPrefixWidth checks the width of the block prefix of lines.
 func TestPrefixWidth(t *testing.T) {
 	casi := []struct {
 		raw  string
@@ -187,82 +187,82 @@ func TestPrefixWidth(t *testing.T) {
 	}
 	for _, c := range casi {
 		if got := markdown.PrefixWidth(c.raw); got != c.want {
-			t.Errorf("PrefixWidth(%q) = %d, atteso %d", c.raw, got, c.want)
+			t.Errorf("PrefixWidth(%q) = %d, want %d", c.raw, got, c.want)
 		}
 	}
 }
 
-// TestIsInsideFence verifica il riconoscimento delle righe dentro un blocco di
-// codice delimitato da fence.
+// TestIsInsideFence checks the recognition of lines inside a
+// code block delimited by fences.
 func TestIsInsideFence(t *testing.T) {
 	lines := []string{"```", "a", "```", "b"}
 
 	if !isInsideFence(lines, 1) {
-		t.Fatal("isInsideFence(lines, 1) = false, atteso true")
+		t.Fatal("isInsideFence(lines, 1) = false, want true")
 	}
 	if isInsideFence(lines, 3) {
-		t.Fatal("isInsideFence(lines, 3) = true, atteso false")
+		t.Fatal("isInsideFence(lines, 3) = true, want false")
 	}
 }
 
-// TestRenderFocusRowPad verifica che la riga di focus compensi il prefisso di
-// blocco con uno spazio, così da non spostare il testo a video.
+// TestRenderFocusRowPad checks that the focus row compensates the block
+// prefix with a space, so as not to shift the text on screen.
 func TestRenderFocusRowPad(t *testing.T) {
-	e := Editor{lines: []string{"# ciao"}, cursorLine: 0, cursorCol: 0, width: 10, height: 1}
+	e := Editor{lines: []string{"# hello"}, cursorLine: 0, cursorCol: 0, width: 10, height: 1}
 
 	got := ansi.Strip(e.View())
-	if len(got) < len("  # ciao") || got[:len("  # ciao")] != "  # ciao" {
-		t.Fatalf("View() = %q, atteso inizio %q", got, "  # ciao")
+	if len(got) < len("  # hello") || got[:len("  # hello")] != "  # hello" {
+		t.Fatalf("View() = %q, want prefix %q", got, "  # hello")
 	}
 }
 
-// TestSpaceInserts verifica che la barra spaziatrice inserisca uno spazio alla
-// posizione del cursore sulla riga corrente.
+// TestSpaceInserts checks that the space bar inserts a space at the
+// cursor position on the current line.
 func TestSpaceInserts(t *testing.T) {
 	e := New([]string{"a"}, 10, 5)
 
 	m, _ := e.Update(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune(" ")})
 	e2, ok := m.(Editor)
 	if !ok {
-		t.Fatalf("Update ha restituito %T, atteso Editor", m)
+		t.Fatalf("Update returned %T, want Editor", m)
 	}
 
 	if got := e2.Lines()[0]; got != "a " {
-		t.Fatalf("Lines()[0] = %q, atteso %q", got, "a ")
+		t.Fatalf("Lines()[0] = %q, want %q", got, "a ")
 	}
 }
 
-// TestArrowMoves verifica che la freccia giù sposti il cursore alla riga
-// successiva.
+// TestArrowMoves checks that the down arrow moves the cursor to the
+// next line.
 func TestArrowMoves(t *testing.T) {
 	e := New([]string{"a", "b"}, 10, 5)
 
 	m, _ := e.Update(tea.KeyMsg{Type: tea.KeyDown})
 	e2, ok := m.(Editor)
 	if !ok {
-		t.Fatalf("Update ha restituito %T, atteso Editor", m)
+		t.Fatalf("Update returned %T, want Editor", m)
 	}
 
 	if got := e2.CursorRow(); got != 2 {
-		t.Fatalf("CursorRow() = %d, atteso 2", got)
+		t.Fatalf("CursorRow() = %d, want 2", got)
 	}
 }
 
-// TestQuoteBarInView verifica che le citazioni mostrino la barra verticale anche
-// sulle righe rese e sulla Focus Line, così la barra resta continua su tutto il
-// blocco di citazione.
+// TestQuoteBarInView checks that quotes show the vertical bar also
+// on the rendered lines and on the Focus Line, so the bar stays continuous over the whole
+// quote block.
 func TestQuoteBarInView(t *testing.T) {
 	lipgloss.SetColorProfile(termenv.TrueColor)
 
 	lines := []string{
-		"testo normale",
-		"> prima riga di citazione",
-		"> seconda riga",
+		"plain text",
+		"> first quote line",
+		"> second line",
 		">",
-		"testo dopo",
+		"text after",
 	}
 	e := New(lines, 50, 11)
-	e = e.SetCursor(2, 0) // Focus Line sulla seconda riga di citazione
+	e = e.SetCursor(2, 0) // Focus Line on the second quote line
 
 	view := ansi.Strip(e.View())
 	rows := strings.Split(view, "\n")
@@ -272,32 +272,32 @@ func TestQuoteBarInView(t *testing.T) {
 		if strings.HasPrefix(row, markdown.QuoteBar) {
 			withBar++
 		}
-		if strings.Contains(row, "riga di citazione") || strings.Contains(row, "seconda riga") {
+		if strings.Contains(row, "quote line") || strings.Contains(row, "second line") {
 			if !strings.HasPrefix(row, markdown.QuoteBar) {
-				t.Errorf("riga di citazione senza barra a sinistra: %q", row)
+				t.Errorf("quote line without a bar on the left: %q", row)
 			}
 			quoted++
 		}
 	}
 	if quoted != 2 {
-		t.Errorf("trovate %d righe di citazione nella view, want 2:\n%s", quoted, view)
+		t.Errorf("found %d quote lines in the view, want 2:\n%s", quoted, view)
 	}
-	// Tre righe di citazione (compresa quella vuota, che qui è resa): tutte
-	// portano la barra, compresa la Focus Line, che mostra il grezzo con il suo
-	// ">" ma mantiene la barra a sinistra.
+	// Three quote lines (including the empty one, which is rendered here): all of them
+	// carry the bar, including the Focus Line, which shows the raw text with its
+	// ">" but keeps the bar on the left.
 	if withBar != 3 {
-		t.Errorf("righe con la barra = %d, want 3 (una per riga di citazione):\n%s", withBar, view)
+		t.Errorf("lines with the bar = %d, want 3 (one per quote line):\n%s", withBar, view)
 	}
-	// La Focus Line è grezza: mostra il marcatore oltre alla barra.
+	// The Focus Line is raw: it shows the marker in addition to the bar.
 	if !strings.HasPrefix(strings.Split(view, "\n")[e.focusRow()], markdown.QuoteBar+" > ") {
-		t.Errorf("la Focus Line non mostra la barra e il grezzo:\n%s", view)
+		t.Errorf("the Focus Line does not show the bar and the raw text:\n%s", view)
 	}
 
-	// La riga "> " vuota è comunque una citazione: la barra non si interrompe.
+	// The empty "> " line is still a quote: the bar is not interrupted.
 	for _, row := range rows {
 		if strings.TrimSpace(row) == markdown.QuoteBar {
 			return
 		}
 	}
-	t.Errorf("la riga di citazione vuota non porta la barra:\n%s", view)
+	t.Errorf("the empty quote line does not carry the bar:\n%s", view)
 }

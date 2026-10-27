@@ -1,6 +1,6 @@
-// Package markdown scompone una riga di markdown in segmenti di testo stilati.
-// Il package non conosce colori né codici ANSI: si limita a decidere lo stile
-// di ogni porzione di testo, lasciando al chiamante la resa grafica.
+// Package markdown breaks a line of markdown into styled text segments.
+// The package knows nothing about colours or ANSI codes: it only decides the style
+// of each piece of text, leaving the rendering to the caller.
 package markdown
 
 import (
@@ -9,11 +9,11 @@ import (
 	"unicode/utf8"
 )
 
-// Style identifica lo stile di un Segment.
+// Style identifies the style of a Segment.
 type Style int
 
-// Stili riconosciuti dal renderer. StyleHeading1..StyleHeading6 sono
-// contigui: lo stile di un'intestazione è StyleHeading1 + (livello - 1).
+// Styles recognised by the renderer. StyleHeading1..StyleHeading6 are
+// contiguous: the style of a heading is StyleHeading1 + (level - 1).
 const (
 	StyleNone Style = iota
 	StyleHeading1
@@ -33,19 +33,19 @@ const (
 	StyleCheckbox
 	StyleFence
 	StyleCodeBlock
-	// StyleQuoteBar è il segmento della barra verticale che affianca una
-	// citazione; il testo della citazione usa StyleQuote.
+	// StyleQuoteBar is the segment of the vertical bar that runs alongside a
+	// quote; the text of the quote uses StyleQuote.
 	StyleQuoteBar
 )
 
-// Segment è una porzione di riga con il suo stile.
+// Segment is a portion of a line with its style.
 //
-// RawFrom e RawTo sono offset in byte nel testo grezzo (raw) passato a
-// RenderLine, con RawTo escluso: indicano il tratto di sorgente che il segmento
-// rende. Per il testo semplice è lo span esatto dei propri byte, per il
-// contenuto inline è lo span del contenuto fra i delimitatori (delimitatori
-// esclusi), per i segmenti sintetizzati (☐/☑, •) è lo span del marcatore grezzo
-// che sostituiscono.
+// RawFrom and RawTo are byte offsets into the raw text passed to
+// RenderLine, with RawTo exclusive: they mark the stretch of source that the
+// segment renders. For plain text it is the exact span of its own bytes, for
+// inline content it is the span of the content between the delimiters
+// (delimiters excluded), for synthesised segments (☐/☑, •) it is the span of the
+// raw marker they replace.
 type Segment struct {
 	Text    string
 	Style   Style
@@ -54,18 +54,18 @@ type Segment struct {
 }
 
 var (
-	// Intestazione: 1-6 "#" seguiti da almeno uno spazio o tab.
+	// Heading: 1-6 "#" followed by at least one space or tab.
 	headingRe = regexp.MustCompile(`^(#{1,6})[ \t]+(.*)$`)
-	// Citazione: ">" seguito, opzionalmente, da uno spazio o tab.
+	// Quote: ">" optionally followed by a space or tab.
 	quoteRe = regexp.MustCompile(`^>[ \t]?(.*)$`)
-	// Checkbox: "- [ ]" o "- [x]"/"- [X]" (valutata prima delle liste).
+	// Checkbox: "- [ ]" or "- [x]"/"- [X]" (evaluated before lists).
 	checkboxRe = regexp.MustCompile(`^(\s*)- \[([ xX])\](.*)$`)
-	// Lista non ordinata: -, * o + seguiti da almeno uno spazio.
+	// Unordered list: -, * or + followed by at least one space.
 	bulletRe = regexp.MustCompile(`^(\s*)[-*+]\s+(.*)$`)
-	// Lista ordinata: solo per il calcolo della larghezza del prefisso.
+	// Ordered list: only used to compute the width of the prefix.
 	orderedRe = regexp.MustCompile(`^(\s*)\d+\.\s+`)
 
-	// Sostituzioni inline, in ordine di priorità decrescente.
+	// Inline replacements, in decreasing order of priority.
 	imageRe            = regexp.MustCompile(`!\[([^\]]*)\]\([^)]*\)`)
 	linkRe             = regexp.MustCompile(`\[([^\]]*)\]\([^)]*\)`)
 	boldRe             = regexp.MustCompile(`\*\*([^*]+)\*\*`)
@@ -75,13 +75,13 @@ var (
 	italicUnderscoreRe = regexp.MustCompile(`_([^_]+)_`)
 )
 
-// inlinePattern associa un pattern inline allo stile del suo contenuto.
+// inlinePattern associates an inline pattern with the style of its content.
 type inlinePattern struct {
 	re  *regexp.Regexp
 	sty Style
 }
 
-// inlinePatterns è ordinato per priorità: a parità di posizione vince il primo.
+// inlinePatterns is ordered by priority: at equal position the first one wins.
 var inlinePatterns = []inlinePattern{
 	{imageRe, StyleImage},
 	{linkRe, StyleLink},
@@ -92,15 +92,15 @@ var inlinePatterns = []inlinePattern{
 	{italicUnderscoreRe, StyleItalic},
 }
 
-// isFenceLine indica se la riga apre o chiude un blocco di codice.
+// isFenceLine reports whether the line opens or closes a code block.
 func isFenceLine(s string) bool {
 	t := strings.TrimSpace(s)
 	return strings.HasPrefix(t, "```") || strings.HasPrefix(t, "~~~")
 }
 
-// RenderLine scompone una riga markdown nei suoi segmenti stilati. Quando
-// insideFence è vero la riga appartiene a un blocco di codice: viene restituita
-// intatta, senza alcuna sostituzione.
+// RenderLine breaks a markdown line into its styled segments. When
+// insideFence is true the line belongs to a code block: it is returned
+// untouched, without any replacement.
 func RenderLine(raw string, insideFence bool) []Segment {
 	if insideFence {
 		return []Segment{{Text: raw, Style: StyleCodeBlock, RawFrom: 0, RawTo: len(raw)}}
@@ -117,29 +117,29 @@ func RenderLine(raw string, insideFence bool) []Segment {
 	return append(segments, renderInline(rest, base, off)...)
 }
 
-// splitPrefix riconosce il prefisso di blocco di raw e restituisce l'eventuale
-// segmento già emesso per il prefisso (con i suoi offset nel grezzo), il testo
-// che rimane da tokenizzare, lo stile base di quel testo e l'offset in byte di
-// rest dentro raw. Il contenuto inizia sempre dopo il prefisso rimosso, quindi
-// l'offset di rest è len(raw)-len(rest).
+// splitPrefix recognises the block prefix of raw and returns the segment already
+// emitted for the prefix, if any (with its offsets in the raw text), the text
+// left to tokenise, the base style of that text and the byte offset of
+// rest inside raw. The content always starts after the removed prefix, so
+// the offset of rest is len(raw)-len(rest).
 func splitPrefix(raw string) (prefix *Segment, rest string, base Style, off int) {
 	rest, base, off = raw, StyleNone, 0
 
-	// 1. Intestazione.
+	// 1. Heading.
 	if m := headingRe.FindStringSubmatch(rest); m != nil {
 		return nil, m[2], Style(int(StyleHeading1) + len(m[1]) - 1), len(raw) - len(m[2])
 	}
-	// 2. Citazione. Il marcatore ">" (e l'eventuale spazio) diventa una barra
-	// verticale larga quanto il marcatore rimosso, così il testo resta
-	// allineato fra la Focus Line e le righe rese, e le citazioni consecutive
-	// disegnano una barra continua.
+	// 2. Quote. The ">" marker (and the optional space) becomes a vertical bar
+	// as wide as the removed marker, so the text stays
+	// aligned between the Focus Line and the rendered lines, and consecutive
+	// quotes draw a continuous bar.
 	if m := quoteRe.FindStringSubmatch(rest); m != nil {
 		end := len(raw) - len(m[1])
 		return &Segment{Text: quoteBar(end), Style: StyleQuoteBar, RawFrom: 0, RawTo: end},
 			m[1], StyleQuote, end
 	}
-	// 3. Checkbox, prima delle liste. Il segmento sintetizzato copre lo span del
-	// marcatore grezzo sostituito, separatore compreso.
+	// 3. Checkbox, before lists. The synthesised segment covers the span of the
+	// raw marker it replaces, separator included.
 	if m := checkboxRe.FindStringSubmatch(rest); m != nil {
 		mark := "☐"
 		if m[2] == "x" || m[2] == "X" {
@@ -150,23 +150,23 @@ func splitPrefix(raw string) (prefix *Segment, rest string, base Style, off int)
 		return &Segment{Text: m[1] + mark + " ", Style: StyleCheckbox, RawFrom: 0, RawTo: end},
 			body, StyleNone, len(raw) - len(body)
 	}
-	// 4. Lista non ordinata.
+	// 4. Unordered list.
 	if m := bulletRe.FindStringSubmatch(rest); m != nil {
 		end := len(raw) - len(m[2])
 		return &Segment{Text: m[1] + "• ", Style: StyleBullet, RawFrom: 0, RawTo: end},
 			m[2], StyleNone, end
 	}
-	// 5. Nessun prefisso.
+	// 5. No prefix.
 	return nil, raw, StyleNone, 0
 }
 
-// QuoteBar è il carattere della barra verticale che affianca le citazioni.
+// QuoteBar is the character of the vertical bar that runs alongside quotes.
 const QuoteBar = "▌"
 
-// quoteBar costruisce la barra verticale larga width byte, cioè quanti byte
-// occupava il marcatore ">" rimosso: la barra più uno spazio per ogni byte
-// successivo al primo. Così "> testo" diventa "▌ testo" e ">testo" diventa
-// "▌testo", mantenendo l'allineamento del contenuto con le altre righe.
+// quoteBar builds the vertical bar width bytes wide, that is as many bytes
+// as the removed ">" marker took: the bar plus one space for every byte
+// after the first. So "> text" becomes "▌ text" and ">text" becomes
+// "▌text", keeping the content aligned with the other lines.
 func quoteBar(width int) string {
 	if width <= 0 {
 		return ""
@@ -174,20 +174,20 @@ func quoteBar(width int) string {
 	return QuoteBar + strings.Repeat(" ", width-1)
 }
 
-// IsQuote indica se raw è una riga di citazione (comincia con ">").
+// IsQuote reports whether raw is a quote line (it starts with ">").
 func IsQuote(raw string) bool {
 	return quoteRe.MatchString(raw)
 }
 
-// renderInline tokenizza rest assegnando lo stile base al testo comune e lo
-// stile specifico al contenuto di ogni match inline. off è l'offset in byte di
-// rest dentro la riga grezza: gli offset dei segmenti prodotti ne derivano.
+// renderInline tokenises rest, giving the base style to ordinary text and the
+// specific style to the content of every inline match. off is the byte offset of
+// rest inside the raw line: the offsets of the produced segments derive from it.
 func renderInline(rest string, base Style, off int) []Segment {
 	var segments []Segment
 	for rest != "" {
 		bestIdx, bestLoc := -1, []int(nil)
 
-		// Match più a sinistra; a parità di posizione vince il primo pattern.
+		// Leftmost match; at equal position the first pattern wins.
 		for i, p := range inlinePatterns {
 			loc := p.re.FindStringSubmatchIndex(rest)
 			if loc == nil {
@@ -204,7 +204,7 @@ func renderInline(rest string, base Style, off int) []Segment {
 		if bestLoc[0] > 0 {
 			segments = appendText(segments, rest[:bestLoc[0]], base, off)
 		}
-		// Il contenuto inline copre i byte fra i delimitatori, esclusi.
+		// The inline content covers the bytes between the delimiters, excluded.
 		segments = appendText(segments, rest[bestLoc[2]:bestLoc[3]], inlinePatterns[bestIdx].sty, off+bestLoc[2])
 		rest = rest[bestLoc[1]:]
 		off += bestLoc[1]
@@ -212,9 +212,9 @@ func renderInline(rest string, base Style, off int) []Segment {
 	return segments
 }
 
-// appendText aggiunge un segmento, saltando il testo vuoto. off è l'offset in
-// byte di text dentro la riga grezza; il testo comune è copiato intatto, quindi
-// il segmento occupa esattamente i propri byte.
+// appendText adds a segment, skipping empty text. off is the byte offset of
+// text inside the raw line; ordinary text is copied intact, so the
+// segment occupies exactly its own bytes.
 func appendText(segments []Segment, text string, sty Style, off int) []Segment {
 	if text == "" {
 		return segments
@@ -222,11 +222,11 @@ func appendText(segments []Segment, text string, sty Style, off int) []Segment {
 	return append(segments, Segment{Text: text, Style: sty, RawFrom: off, RawTo: off + len(text)})
 }
 
-// MapCellToRaw converte una colonna in celle di visualizzazione nella colonna in
-// byte della riga grezza da cui i segmenti sono stati prodotti. Se cell cade
-// oltre tutti i segmenti restituisce la lunghezza totale della riga grezza.
+// MapCellToRaw converts a column in display cells into the byte column of the
+// raw line the segments were produced from. If cell falls beyond all the
+// segments it returns the total length of the raw line.
 //
-// assumed: runa=cella nel renderer attuale
+// assumed: rune = cell in the current renderer
 func MapCellToRaw(segs []Segment, cell int) int {
 	if cell < 0 {
 		return 0
@@ -241,9 +241,9 @@ func MapCellToRaw(segs []Segment, cell int) int {
 	for _, s := range segs {
 		n := utf8.RuneCountInString(s.Text)
 		if cell < col+n {
-			// Il segmento rende se stesso byte per byte solo quando il testo
-			// coincide con lo span grezzo; i segmenti sintetizzati (☐/☑, •)
-			// valgono per il marcatore che sostituiscono.
+			// The segment renders itself byte for byte only when the text
+			// matches the raw span; synthesised segments (☐/☑, •)
+			// stand for the marker they replace.
 			if len(s.Text) != s.RawTo-s.RawFrom {
 				return s.RawFrom
 			}
@@ -254,8 +254,8 @@ func MapCellToRaw(segs []Segment, cell int) int {
 	return total
 }
 
-// byteOffsetOfRune restituisce l'offset in byte della runa di indice idx dentro
-// s. Oltre l'ultima runa restituisce len(s).
+// byteOffsetOfRune returns the byte offset of the rune at index idx inside
+// s. Past the last rune it returns len(s).
 func byteOffsetOfRune(s string, idx int) int {
 	i := 0
 	for off := range s {
@@ -267,16 +267,16 @@ func byteOffsetOfRune(s string, idx int) int {
 	return len(s)
 }
 
-// PrefixWidth restituisce quante celle occupa il prefisso di blocco rimosso
-// dalla riga. Tutti i prefissi riconosciuti sono ASCII, quindi il numero di
-// rune coincide con il numero di celle.
+// PrefixWidth returns how many cells the block prefix removed from the line
+// occupies. All recognised prefixes are ASCII, so the number of
+// runes equals the number of cells.
 func PrefixWidth(raw string) int {
 	prefix, rest, _, _ := splitPrefix(raw)
 	removed := utf8.RuneCountInString(raw) - utf8.RuneCountInString(rest)
 	if prefix != nil || removed > 0 {
 		return removed
 	}
-	// Lista ordinata: non rimossa da RenderLine, ma il cui prefisso va misurato.
+	// Ordered list: not removed by RenderLine, but its prefix has to be measured.
 	if m := orderedRe.FindStringSubmatch(raw); m != nil {
 		return utf8.RuneCountInString(m[0])
 	}

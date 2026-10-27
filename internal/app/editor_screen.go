@@ -13,18 +13,18 @@ import (
 	"nook/internal/theme"
 )
 
-// edMode è la modalità della schermata editor.
+// edMode is the mode of the editor screen.
 type edMode int
 
 const (
 	edEditing edMode = iota
 	edPrompt
-	// edFormatPalette è la palette di formattazione aperta da F3.
+	// edFormatPalette is the formatting palette opened by F3.
 	edFormatPalette
 )
 
-// editorScreen è la schermata dell'editor di una nota: il testo con il suo
-// footer, il popup Salva/Scarta/Annulla e i toast sovrapposti.
+// editorScreen is the screen of a note's editor: the text with its
+// footer, the Save/Discard/Cancel popup and the overlaid toasts.
 type editorScreen struct {
 	ed           editor.Editor
 	note         store.Note
@@ -36,17 +36,17 @@ type editorScreen struct {
 	action       editorAction
 	width        int
 	height       int
-	// lastClick è l'ultimo click col mouse nell'editor, per doppio e triplo click.
+	// lastClick is the last mouse click in the editor, for double and triple clicks.
 	lastClick edClick
-	// paletteChoice è la voce corrente della palette di formattazione.
+	// paletteChoice is the current entry of the formatting palette.
 	paletteChoice int
-	// Trascinamento col mouse: ancora della selezione e stato del gesto.
+	// Mouse dragging: anchor of the selection and state of the gesture.
 	dragLine int
 	dragCol  int
 	dragging bool
 }
 
-// newEditorScreen crea la schermata editor per la nota data.
+// newEditorScreen creates the editor screen for the given note.
 func newEditorScreen(st *store.Store, note *store.Note, w, h int) editorScreen {
 	var n store.Note
 	if note != nil {
@@ -66,9 +66,9 @@ func newEditorScreen(st *store.Store, note *store.Note, w, h int) editorScreen {
 	}
 }
 
-// edHeight è l'altezza da dare al testo per un'altezza di contenuto ch: il
-// contenuto è alto ch righe meno quella del footer, che la schermata disegna
-// sotto il testo.
+// edHeight is the height to give the text for a content height ch: the
+// content is ch rows high minus the footer one, which the screen draws
+// below the text.
 func edHeight(ch int) int {
 	if ch-1 > 0 {
 		return ch - 1
@@ -76,59 +76,59 @@ func edHeight(ch int) int {
 	return 1
 }
 
-// setSize adatta la schermata alla dimensione del terminale.
+// setSize adapts the screen to the terminal size.
 func (s editorScreen) setSize(w, h int) editorScreen {
 	s.width, s.height = w, h
 	s.ed = s.ed.SetSize(contentW(w), edHeight(contentH(h)))
 	return s
 }
 
-// Dirty indica se la nota ha modifiche non salvate.
+// Dirty reports whether the note has unsaved changes.
 func (s editorScreen) Dirty() bool { return s.ed.Dirty }
 
-// edToastDuration è quanto resta visibile un toast dell'editor.
+// edToastDuration is how long an editor toast stays visible.
 const edToastDuration = 3 * time.Second
 
-// editorToastClear è il messaggio che spegne il toast dell'editor allo scadere
-// di edToastDuration.
+// editorToastClear is the message that turns off the editor toast when
+// edToastDuration expires.
 type editorToastClear struct{}
 
-// edToastTickCmd restituisce il comando che dopo edToastDuration recapita
+// edToastTickCmd returns the command that after edToastDuration delivers
 // editorToastClear.
 func edToastTickCmd() tea.Cmd {
 	return tea.Tick(edToastDuration, func(time.Time) tea.Msg { return editorToastClear{} })
 }
 
-// edToastVisible indica se il toast è ancora da mostrare.
+// edToastVisible reports whether the toast is still to be shown.
 func (s editorScreen) edToastVisible() bool {
 	return s.toast != "" && time.Now().Before(s.toastUntil)
 }
 
-// edShowToast imposta il toast con la durata standard.
+// edShowToast sets the toast with the standard duration.
 func (s editorScreen) edShowToast(msg string) editorScreen {
 	s.toast = msg
 	s.toastUntil = time.Now().Add(edToastDuration)
 	return s
 }
 
-// save scrive il corpo corrente della nota nello store. Il terzo valore dice se
-// il salvataggio è riuscito; in caso di errore il messaggio diventa un toast.
+// save writes the note's current body to the store. The third value says whether
+// saving succeeded; on error the message becomes a toast.
 func (s editorScreen) save() (editorScreen, tea.Cmd, bool) {
 	body := strings.Join(s.ed.Lines(), "\n")
 	if err := s.st.Save(s.note.ID, s.note.Title, body); err != nil {
-		s = s.edShowToast("errore: " + err.Error())
+		s = s.edShowToast("error: " + err.Error())
 		return s, edToastTickCmd(), false
 	}
 	s.ed.Dirty = false
 	return s, nil, true
 }
 
-// Update gestisce i messaggi della schermata editor.
+// Update handles the messages of the editor screen.
 func (s editorScreen) Update(msg tea.Msg) (editorScreen, tea.Cmd) {
 	switch msg := msg.(type) {
 	case editorToastClear:
-		// Il toast si spegne solo se i suoi 3 secondi sono davvero passati;
-		// altrimenti serve un altro tick.
+		// The toast turns off only when its 3 seconds have really passed;
+		// otherwise another tick is needed.
 		if s.edToastVisible() {
 			return s, edToastTickCmd()
 		}
@@ -143,7 +143,7 @@ func (s editorScreen) Update(msg tea.Msg) (editorScreen, tea.Cmd) {
 	return s, nil
 }
 
-// edUpdateKey gestisce un tasto secondo lo schema condiviso.
+// edUpdateKey handles a key according to the shared scheme.
 func (s editorScreen) edUpdateKey(keyMsg tea.KeyMsg) (editorScreen, tea.Cmd) {
 	key := keyMsg.String()
 
@@ -182,7 +182,7 @@ func (s editorScreen) edUpdateKey(keyMsg tea.KeyMsg) (editorScreen, tea.Cmd) {
 	}
 
 	if s.ed.WantsPalette {
-		// F3: si apre la palette di formattazione sulla prima voce.
+		// F3: the formatting palette opens on the first entry.
 		s.ed.WantsPalette = false
 		s.mode = edFormatPalette
 		s.paletteChoice = 0
@@ -193,18 +193,18 @@ func (s editorScreen) edUpdateKey(keyMsg tea.KeyMsg) (editorScreen, tea.Cmd) {
 		s.ed.WantsSave = false
 		saved, saveCmd, ok := s.save()
 		if !ok {
-			// Errore: save() ha già impostato il toast; serve solo il suo tick.
+			// Error: save() has already set the toast; only its tick is needed.
 			return saved, saveCmd
 		}
-		// Salvataggio riuscito: toast "salvato" con auto-hide, con lo stesso
-		// meccanismo (edShowToast + edToastTickCmd) usato dall'errore.
-		return saved.edShowToast("salvato"), edToastTickCmd()
+		// Save succeeded: "saved" toast with auto-hide, with the same
+		// mechanism (edShowToast + edToastTickCmd) used by the error.
+		return saved.edShowToast("saved"), edToastTickCmd()
 	}
 
 	if s.ed.WantsExit {
-		// ctrl+q (e esc) su una nota modificata: si apre il popup
-		// Salva/Scarta/Annulla, senza tornare alla lista; senza modifiche si
-		// torna alla lista. Lo stato del popup è solo mode/promptChoice.
+		// ctrl+q (and esc) on a modified note: the Save/Discard/Cancel
+		// popup opens, without going back to the list; without changes it
+		// goes back to the list. The popup state is only mode/promptChoice.
 		s.ed.WantsExit = false
 		if s.ed.Dirty {
 			s.mode = edPrompt
@@ -216,13 +216,13 @@ func (s editorScreen) edUpdateKey(keyMsg tea.KeyMsg) (editorScreen, tea.Cmd) {
 	return s, cmd
 }
 
-// edMultiClickThreshold è l'intervallo massimo fra due click sulla stessa cella
-// perché valgano come doppio (o triplo) click.
+// edMultiClickThreshold is the maximum interval between two clicks on the same cell
+// for them to count as a double (or triple) click.
 const edMultiClickThreshold = 400 * time.Millisecond
 
-// edClick è l'ultimo click registrato dall'editor: la cella (x, y) del
-// terminale, quanti click consecutivi sono stati riconosciuti su quella cella e
-// l'istante. Il valore zero vuol dire "nessun click prima".
+// edClick is the last click recorded by the editor: the terminal cell (x, y),
+// how many consecutive clicks have been recognised on that cell and
+// the instant. The zero value means "no previous click".
 type edClick struct {
 	x     int
 	y     int
@@ -230,12 +230,12 @@ type edClick struct {
 	at    time.Time
 }
 
-// edClickCount riconosce click singolo, doppio e triplo: è un helper puro a
-// tempo esplicito (l'istante now arriva da fuori) così è provabile senza
-// orologio. Se il click precedente esiste, se ha colpito la stessa cella e se
-// now non dista più di edMultiClickThreshold da prev.at il conteggio cresce
-// fino a tre click; in ogni altro caso riparte da uno, così un quarto click
-// vale come un click singolo nuovo.
+// edClickCount recognises single, double and triple clicks: it is a pure helper with
+// explicit time (the instant now comes from outside) so it can be tested without a
+// clock. If the previous click exists, if it hit the same cell and if
+// now is no more than edMultiClickThreshold from prev.at the count grows
+// up to three clicks; in every other case it restarts from one, so a fourth click
+// counts as a new single click.
 func edClickCount(prev edClick, now time.Time, x, y int) int {
 	if prev.at.IsZero() || prev.x != x || prev.y != y {
 		return 1
@@ -250,11 +250,11 @@ func edClickCount(prev edClick, now time.Time, x, y int) int {
 	return prev.count + 1
 }
 
-// edHitLine mappa la cella (x, y) dello schermo alla riga grezza del documento
-// che vi è disegnata: toglie i margini, scarta le celle fuori dall'area
-// contenuto (compresa la riga del footer, che sta sotto il testo) e converte la
-// riga della view nella riga del documento. Restituisce anche la colonna x
-// dentro l'area contenuto.
+// edHitLine maps the screen cell (x, y) to the raw document line
+// drawn there: it removes the margins, discards cells outside the content
+// area (including the footer row, which sits below the text) and converts the
+// view row into the document line. It also returns the column x
+// inside the content area.
 func (s editorScreen) edHitLine(x, y int) (line, cell int, ok bool) {
 	cw, chh := contentW(s.width), contentH(s.height)
 	if marginsActive(s.width, s.height) {
@@ -270,10 +270,10 @@ func (s editorScreen) edHitLine(x, y int) (line, cell int, ok bool) {
 	return idx, x, true
 }
 
-// edHitCol converte la colonna cell in celle della riga line nella colonna in
-// rune della riga grezza, con markdown.MapCellToRaw sui segmenti con cui la
-// view disegna la riga: l'offset in byte che ne esce viene contato in rune,
-// l'unità delle colonne dell'editor.
+// edHitCol converts the column cell, in cells of line line, into the column in
+// runes of the raw line, with markdown.MapCellToRaw on the segments the
+// view draws the line with: the resulting byte offset is counted in runes,
+// the unit of the editor's columns.
 func (s editorScreen) edHitCol(line, cell int) int {
 	raw := s.ed.LineAt(line)
 	off := markdown.MapCellToRaw(s.ed.LineSegments(line), cell)
@@ -286,21 +286,21 @@ func (s editorScreen) edHitCol(line, cell int) int {
 	return utf8.RuneCountInString(raw[:off])
 }
 
-// edUpdateMouse gestisce il mouse dell'editor: solo in edEditing e solo per la
-// pressione del tasto sinistro. Un click mappa la cella in (riga grezza,
-// colonna grezza) e porta lì il cursore, così quella riga diventa la Focus
-// Line; il doppio click (stessa cella entro edMultiClickThreshold) seleziona la
-// parola sotto il cursore e il triplo click l'intera riga. Dal secondo click in
-// poi il cursore non viene più riportato sulla cella: è il primo click ad
-// averlo già posato lì, mentre la view può essersi scorsa.
+// edUpdateMouse handles the editor's mouse: only in edEditing and only for the
+// press of the left button. A click maps the cell to (raw line,
+// raw column) and brings the cursor there, so that line becomes the Focus
+// Line; the double click (same cell within edMultiClickThreshold) selects the
+// word under the cursor and the triple click the whole line. From the second click
+// on, the cursor is no longer brought back to the cell: the first click has
+// already placed it there, while the view may have scrolled.
 func (s editorScreen) edUpdateMouse(m tea.MouseMsg) (editorScreen, tea.Cmd) {
 	if s.mode != edEditing {
 		return s, nil
 	}
 
-	// Trascinamento: fra la pressione e il rilascio del tasto sinistro i
-	// movimenti del mouse estendono la selezione dall'ancora fissata al click
-	// fino alla cella raggiunta.
+	// Dragging: between the press and the release of the left button the
+	// mouse movements extend the selection from the anchor set at the click
+	// to the cell reached.
 	switch m.Action {
 	case tea.MouseActionRelease:
 		s.dragging = false
@@ -332,8 +332,8 @@ func (s editorScreen) edUpdateMouse(m tea.MouseMsg) (editorScreen, tea.Cmd) {
 		}
 		col := s.edHitCol(line, cell)
 		s.ed = s.ed.SetCursor(line, col)
-		// Il click fissa l'ancora di un'eventuale selezione per trascinamento:
-		// i movimenti del mouse con il tasto premuto la estendono da qui.
+		// The click sets the anchor of a possible drag selection:
+		// mouse movements with the button pressed extend it from here.
 		s.dragLine, s.dragCol = line, col
 		s.dragging = true
 	case 2:
@@ -346,34 +346,34 @@ func (s editorScreen) edUpdateMouse(m tea.MouseMsg) (editorScreen, tea.Cmd) {
 	return s, nil
 }
 
-// --- Palette di formattazione (F3) ---
+// --- Formatting palette (F3) ---
 
-// edPaletteAction è una voce della palette di formattazione: la lettera che
-// Editor.ApplyFormat interpreta e l'etichetta breve mostrata nel popup.
+// edPaletteAction is an entry of the formatting palette: the letter that
+// Editor.ApplyFormat interprets and the short label shown in the popup.
 type edPaletteAction struct {
 	key   string
 	label string
 }
 
-// formatPaletteActions sono le 10 azioni della palette di formattazione,
-// nell'ordine mostrato: la lettera è quella di applyFormatKey.
+// formatPaletteActions are the 10 actions of the formatting palette,
+// in the order shown: the letter is the one of applyFormatKey.
 var formatPaletteActions = []edPaletteAction{
-	{"b", "grassetto"},
-	{"i", "corsivo"},
-	{"h", "titolo"},
-	{"k", "codice"},
+	{"b", "bold"},
+	{"i", "italic"},
+	{"h", "heading"},
+	{"k", "code"},
 	{"x", "checkbox"},
 	{"l", "link"},
-	{"q", "citazione"},
-	{"s", "barrato"},
-	{"u", "lista"},
-	{"0", "togli titolo"},
+	{"q", "quote"},
+	{"s", "strike"},
+	{"u", "list"},
+	{"0", "remove heading"},
 }
 
-// edUpdatePalette gestisce i tasti della palette di formattazione: su e giù
-// cambiano la voce in modo circolare, invio applica la formattazione della voce
-// corrente e chiude, esc chiude senza applicare. Finché la palette è aperta ogni
-// altro tasto è sospeso, come nel popup di uscita.
+// edUpdatePalette handles the keys of the formatting palette: up and down
+// change the entry circularly, enter applies the formatting of the current
+// entry and closes, esc closes without applying. As long as the palette is open every
+// other key is suspended, as in the exit popup.
 func (s editorScreen) edUpdatePalette(key string) (editorScreen, tea.Cmd) {
 	switch key {
 	case "up":
@@ -392,11 +392,11 @@ func (s editorScreen) edUpdatePalette(key string) (editorScreen, tea.Cmd) {
 	return s, nil
 }
 
-// formatPaletteBox costruisce il contenuto del popup della palette: la riga di
-// titolo e una riga per azione, con la voce corrente fra parentesi quadre.
+// formatPaletteBox builds the content of the palette popup: the title row
+// and one row per action, with the current entry between square brackets.
 func formatPaletteBox(s editorScreen) string {
 	lines := make([]string, 0, len(formatPaletteActions)+1)
-	lines = append(lines, edPromptStyle.Render("Formattazione"))
+	lines = append(lines, edPromptStyle.Render("Formatting"))
 	for i, a := range formatPaletteActions {
 		label := a.label + " (" + a.key + ")"
 		if i == s.paletteChoice {
@@ -408,17 +408,17 @@ func formatPaletteBox(s editorScreen) string {
 	return strings.Join(lines, "\n")
 }
 
-// edPromptChoices sono le scelte del popup di uscita, nell'ordine mostrato.
-var edPromptChoices = []string{"Salva", "Scarta", "Annulla"}
+// edPromptChoices are the choices of the exit popup, in the order shown.
+var edPromptChoices = []string{"Save", "Discard", "Cancel"}
 
-// Indici delle scelte del popup.
+// Indices of the popup choices.
 const (
 	edPromptSave = iota
 	edPromptDiscard
 	edPromptCancel
 )
 
-// edConfirmPrompt applica la scelta corrente del popup.
+// edConfirmPrompt applies the current choice of the popup.
 func (s editorScreen) edConfirmPrompt() (editorScreen, tea.Cmd) {
 	switch s.promptChoice {
 	case edPromptSave:
@@ -436,12 +436,12 @@ func (s editorScreen) edConfirmPrompt() (editorScreen, tea.Cmd) {
 	}
 }
 
-// edPromptStyle è lo stile del testo del popup.
+// edPromptStyle is the style of the popup text.
 var edPromptStyle = theme.DimText
 
-// promptBox costruisce il contenuto del popup Salva/Scarta/Annulla: la riga di
-// titolo, una riga vuota e la riga delle scelte con quella corrente tra
-// parentesi quadre.
+// promptBox builds the content of the Save/Discard/Cancel popup: the title
+// row, an empty row and the row of choices with the current one between
+// square brackets.
 func promptBox(s editorScreen) string {
 	nameW := 0
 	for _, c := range edPromptChoices {
@@ -459,13 +459,13 @@ func promptBox(s editorScreen) string {
 		}
 	}
 	line := truncatePlain(strings.Join(parts, " "), maxPopupW(s.width))
-	return edPromptStyle.Render("Modifiche non salvate") + "\n\n" + line
+	return edPromptStyle.Render("Unsaved changes") + "\n\n" + line
 }
 
-// View rende la schermata editor: il testo, la riga del footer, con il popup del
-// prompt e il toast sovrapposti.
+// View renders the editor screen: the text, the footer row, with the prompt popup
+// and the toast overlaid.
 func (s editorScreen) View() string {
-	// Il testo occupa l'area contenuto meno la riga del footer.
+	// The text occupies the content area minus the footer row.
 	chh := contentH(s.height)
 	var lines []string
 	if body := s.ed.View(); body != "" {

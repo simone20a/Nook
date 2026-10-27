@@ -5,23 +5,23 @@ import (
 	"strings"
 )
 
-// --- Formattazione markdown ---
+// --- Markdown formatting ---
 
-// Espressioni regolari dei prefissi gestiti dalla formattazione.
+// Regular expressions of the prefixes handled by formatting.
 var (
-	// headingRe riconosce un'intestazione "#... testo".
+	// headingRe recognises a heading "#... text".
 	headingRe = regexp.MustCompile(`^(#{1,6})[ \t]+(.*)$`)
-	// listRe riconosce una voce di lista non ordinata.
+	// listRe recognises an unordered list item.
 	listRe = regexp.MustCompile(`^(\s*)[-*+]\s+(.*)$`)
-	// checkboxEmptyRe riconosce una casella non spuntata.
+	// checkboxEmptyRe recognises an unchecked box.
 	checkboxEmptyRe = regexp.MustCompile(`^(\s*)- \[ \](.*)$`)
-	// checkboxCheckedRe riconosce una casella spuntata.
+	// checkboxCheckedRe recognises a checked box.
 	checkboxCheckedRe = regexp.MustCompile(`^(\s*)- \[([xX])\](.*)$`)
-	// quoteRe riconosce una citazione.
+	// quoteRe recognises a quote.
 	quoteRe = regexp.MustCompile(`^>[ \t]?(.*)$`)
 )
 
-// indexRunes cerca needle in hay a partire da from e restituisce l'indice in rune.
+// indexRunes looks for needle in hay starting from from and returns the index in runes.
 func indexRunes(hay, needle []rune, from int) int {
 	if len(needle) == 0 {
 		return -1
@@ -44,8 +44,8 @@ func indexRunes(hay, needle []rune, from int) int {
 	return -1
 }
 
-// affectedLines restituisce il primo e l'ultimo indice di riga interessati
-// dall'operazione: la selezione se attiva, altrimenti la riga del cursore.
+// affectedLines returns the first and last line index affected
+// by the operation: the selection if active, otherwise the cursor's line.
 func (e Editor) affectedLines() (first, last int) {
 	if e.selecting {
 		sl, _, el, _ := e.selectedRange()
@@ -54,10 +54,10 @@ func (e Editor) affectedLines() (first, last int) {
 	return e.cursorLine, e.cursorLine
 }
 
-// applyLines applica fn a ogni riga di affectedLines. fn restituisce la nuova
-// riga e la differenza in rune tra nuovo e vecchio prefisso; se la riga del
-// cursore è tra quelle modificate, cursorCol viene spostato di quella
-// differenza (mai sotto zero).
+// applyLines applies fn to every line of affectedLines. fn returns the new
+// line and the difference in runes between the new and old prefix; if the
+// cursor's line is among the modified ones, cursorCol is shifted by that
+// difference (never below zero).
 func (e *Editor) applyLines(fn func(line string) (newLine string, delta int)) {
 	first, last := e.affectedLines()
 	if first > last {
@@ -83,8 +83,8 @@ func (e *Editor) applyLines(fn func(line string) (newLine string, delta int)) {
 	e.ensureCursorVisible()
 }
 
-// wrapInline racchiude la selezione (o inserisce una coppia vuota al cursore)
-// con open e close.
+// wrapInline wraps the selection (or inserts an empty pair at the cursor)
+// with open and close.
 func (e *Editor) wrapInline(open, close string) {
 	if e.selecting {
 		sl, sc, el, ec := e.selectedRange()
@@ -140,8 +140,8 @@ func (e *Editor) wrapInline(open, close string) {
 	e.ensureCursorVisible()
 }
 
-// toggleInline rimuove o inserisce il marcatore marker attorno al cursore o
-// alla selezione.
+// toggleInline removes or inserts the marker around the cursor or
+// the selection.
 func (e *Editor) toggleInline(marker string) {
 	if e.selecting {
 		e.wrapInline(marker, marker)
@@ -161,7 +161,7 @@ func (e *Editor) toggleInline(marker string) {
 				continue
 			}
 			if p+len(m) <= e.cursorCol && e.cursorCol <= q {
-				// Rimuovi prima il marcatore di chiusura, poi quello di apertura.
+				// Remove the closing marker first, then the opening one.
 				line = append(line[:q], line[q+len(m):]...)
 				line = append(line[:p], line[p+len(m):]...)
 				if p < e.cursorCol {
@@ -181,7 +181,7 @@ func (e *Editor) toggleInline(marker string) {
 		}
 	}
 
-	// Nessuna coppia: inserisci marker+marker al cursore.
+	// No pair: insert marker+marker at the cursor.
 	if e.cursorCol > len(line) {
 		e.cursorCol = len(line)
 	}
@@ -191,20 +191,20 @@ func (e *Editor) toggleInline(marker string) {
 	e.ensureCursorVisible()
 }
 
-// toggleBold applica o toglie il grassetto.
+// toggleBold applies or removes bold.
 func (e *Editor) toggleBold() { e.toggleInline("**") }
 
-// toggleItalic applica o toglie il corsivo.
+// toggleItalic applies or removes italics.
 func (e *Editor) toggleItalic() { e.toggleInline("_") }
 
-// toggleCode applica o toglie il codice inline.
+// toggleCode applies or removes inline code.
 func (e *Editor) toggleCode() { e.toggleInline("`") }
 
-// toggleStrike applica o toglie il barrato.
+// toggleStrike applies or removes strikethrough.
 func (e *Editor) toggleStrike() { e.toggleInline("~~") }
 
-// setHeading imposta il livello di intestazione (1..3). Senza selezione la
-// riga fa da interruttore; con selezione il livello viene imposto a ogni riga.
+// setHeading sets the heading level (1..3). Without a selection the
+// line acts as a switch; with a selection the level is imposed on every line.
 func (e *Editor) setHeading(level int) {
 	if level < 1 {
 		level = 1
@@ -247,7 +247,7 @@ func (e *Editor) setHeading(level int) {
 	})
 }
 
-// cycleHeading fa scorrere il titolo delle righe interessate tra i livelli
+// cycleHeading cycles the heading of the affected lines through the levels
 // none -> H1 -> H2 -> H3 -> none.
 func (e *Editor) cycleHeading() {
 	first, _ := e.affectedLines()
@@ -268,7 +268,7 @@ func (e *Editor) cycleHeading() {
 	e.setHeading(level)
 }
 
-// removeHeading toglie l'intestazione dalle righe interessate.
+// removeHeading removes the heading from the affected lines.
 func (e *Editor) removeHeading() {
 	e.applyLines(func(line string) (string, int) {
 		m := headingRe.FindStringSubmatch(line)
@@ -280,7 +280,7 @@ func (e *Editor) removeHeading() {
 	})
 }
 
-// toggleList aggiunge o toglie il bullet di lista.
+// toggleList adds or removes the list bullet.
 func (e *Editor) toggleList() {
 	e.applyLines(func(line string) (string, int) {
 		if m := listRe.FindStringSubmatch(line); m != nil {
@@ -292,7 +292,7 @@ func (e *Editor) toggleList() {
 	})
 }
 
-// toggleCheckbox aggiunge o cambia lo stato della casella di controllo.
+// toggleCheckbox adds or changes the state of the checkbox.
 func (e *Editor) toggleCheckbox() {
 	e.applyLines(func(line string) (string, int) {
 		if m := checkboxEmptyRe.FindStringSubmatch(line); m != nil {
@@ -308,7 +308,7 @@ func (e *Editor) toggleCheckbox() {
 	})
 }
 
-// toggleQuote aggiunge o toglie il prefisso di citazione.
+// toggleQuote adds or removes the quote prefix.
 func (e *Editor) toggleQuote() {
 	e.applyLines(func(line string) (string, int) {
 		if m := quoteRe.FindStringSubmatch(line); m != nil {
@@ -320,7 +320,7 @@ func (e *Editor) toggleQuote() {
 	})
 }
 
-// insertLink inserisce un link markdown, col cursore tra le parentesi quadre.
+// insertLink inserts a markdown link, with the cursor between the square brackets.
 func (e *Editor) insertLink() {
 	if e.selecting {
 		e.wrapInline("[", "](https://)")
