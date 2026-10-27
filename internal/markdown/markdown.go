@@ -201,6 +201,15 @@ func splitPrefix(raw string) (prefix *Segment, rest string, base Style, off int)
 	return nil, raw, StyleNone, 0
 }
 
+// HeadingStyle reports whether raw is a heading line and, if so, the style of
+// its level.
+func HeadingStyle(raw string) (Style, bool) {
+	if m := headingRe.FindStringSubmatch(raw); m != nil {
+		return Style(int(StyleHeading1) + len(m[1]) - 1), true
+	}
+	return StyleNone, false
+}
+
 // QuoteBar is the character of the vertical bar that runs alongside quotes.
 const QuoteBar = "▌"
 

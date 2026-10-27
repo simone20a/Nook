@@ -316,3 +316,24 @@ func TestQuoteInline(t *testing.T) {
 		t.Errorf("bold inside the quote is not recognised: %+v", segs)
 	}
 }
+
+// TestHeadingStyle checks the recognition of the heading level.
+func TestHeadingStyle(t *testing.T) {
+	cases := []struct {
+		raw  string
+		want Style
+		ok   bool
+	}{
+		{"# T", StyleHeading1, true},
+		{"### T", StyleHeading3, true},
+		{"###### T", StyleHeading6, true},
+		{"#T", StyleNone, false},
+		{"text", StyleNone, false},
+	}
+	for _, tc := range cases {
+		got, ok := HeadingStyle(tc.raw)
+		if got != tc.want || ok != tc.ok {
+			t.Errorf("HeadingStyle(%q) = %v, %v; want %v, %v", tc.raw, got, ok, tc.want, tc.ok)
+		}
+	}
+}

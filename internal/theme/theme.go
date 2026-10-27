@@ -57,12 +57,12 @@ var fullSpecs = map[markdown.Style]spec{
 // dimSpecs is the table of dimmed styles: lines without focus do not just use
 // Faint, they use a duller foreground.
 var dimSpecs = map[markdown.Style]spec{
-	markdown.StyleHeading1:  {light: "117", dark: "24", bold: true, faint: true},
-	markdown.StyleHeading2:  {light: "122", dark: "28", bold: true, faint: true},
-	markdown.StyleHeading3:  {light: "117", dark: "31", bold: true, faint: true},
-	markdown.StyleHeading4:  {light: "145", dark: "58", faint: true},
-	markdown.StyleHeading5:  {light: "147", dark: "92", faint: true},
-	markdown.StyleHeading6:  {light: "147", dark: "92", faint: true},
+	markdown.StyleHeading1:  {light: "17", dark: "153", bgLight: "153", bgDark: "24", bold: true},
+	markdown.StyleHeading2:  {light: "23", dark: "159", bgLight: "159", bgDark: "30", bold: true},
+	markdown.StyleHeading3:  {light: "22", dark: "157", bgLight: "157", bgDark: "29", bold: true},
+	markdown.StyleHeading4:  {light: "60", dark: "146", bgLight: "254", bgDark: "237", bold: true},
+	markdown.StyleHeading5:  {light: "60", dark: "146", bgLight: "254", bgDark: "237"},
+	markdown.StyleHeading6:  {light: "102", dark: "103", bgLight: "255", bgDark: "236"},
 	markdown.StyleBold:      {light: "60", dark: "103", bold: true},
 	markdown.StyleItalic:    {light: "65", dark: "108", italic: true},
 	markdown.StyleCode:      {light: "66", dark: "110", bgLight: "254", bgDark: "236"},

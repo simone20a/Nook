@@ -183,4 +183,4 @@ NOOK_DEBUG_KEYS=1 ./nook
 
 ## How it was built
 
-Nook was created **exclusively with the coding agent [Orcrist](https://github.com/simone20a/Orcrist)**, using only the **DeepSeek Flash** and **DeepSeek Pro** models: no other agent or model wrote the code.
+The basic structure of Nook has been created **exclusively with the coding agent [Orcrist](https://github.com/simone20a/Orcrist)**, using only the **DeepSeek Flash** and **DeepSeek Pro** models.

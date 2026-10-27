@@ -54,7 +54,13 @@ func (e Editor) renderRow(r int) string {
 		return ""
 	}
 	raw := e.lines[idx]
-	segs := markdown.RenderLine(raw, isInsideFence(e.lines, idx))
+	inside := isInsideFence(e.lines, idx)
+	segs := markdown.RenderLine(raw, inside)
+
+	// A heading is highlighted: its background colours the whole row, and
+	// the inline styles inside it keep the background.
+	headStyle, isHead := markdown.HeadingStyle(raw)
+	isHead = isHead && !inside
 
 	// Rows without focus show rendered markdown; if the selection crosses
 	// them, the selected part is highlighted.
@@ -64,6 +70,9 @@ func (e Editor) renderRow(r int) string {
 	var b strings.Builder
 	for _, seg := range segs {
 		st := theme.DimStyles[seg.Style]
+		if isHead {
+			st = st.Inherit(theme.DimStyles[headStyle])
+		}
 		if hasSel {
 			b.WriteString(renderSegmentWithSelection(seg, fromByte, toByte, st))
 			continue
@@ -71,7 +80,12 @@ func (e Editor) renderRow(r int) string {
 		b.WriteString(st.Render(seg.Text))
 	}
 	if n := len(segs); n > 0 {
-		b.WriteString(blockFill(segs[n-1].Style, e.width-ansi.StringWidth(b.String())))
+		fill := e.width - ansi.StringWidth(b.String())
+		if isHead && fill > 0 {
+			b.WriteString(theme.DimStyles[headStyle].Render(strings.Repeat(" ", fill)))
+		} else {
+			b.WriteString(blockFill(segs[n-1].Style, fill))
+		}
 	}
 	return truncate(b.String(), e.width)
 }
