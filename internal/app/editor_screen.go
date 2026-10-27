@@ -255,26 +255,32 @@ func edClickCount(prev edClick, now time.Time, x, y int) int {
 // area (including the footer row, which sits below the text) and converts the
 // view row into the document line. It also returns the column x
 // inside the content area.
-func (s editorScreen) edHitLine(x, y int) (line, cell int, ok bool) {
+func (s editorScreen) edHitLine(x, y int) (line, cell int, focus, ok bool) {
 	cw, chh := contentW(s.width), contentH(s.height)
 	if marginsActive(s.width, s.height) {
 		x, y = x-marginX, y-marginY
 	}
 	if x < 0 || y < 0 || x >= cw || y >= chh {
-		return 0, 0, false
+		return 0, 0, false, false
 	}
 	idx, ok := s.ed.LineAtRow(y)
 	if !ok {
-		return 0, 0, false
+		return 0, 0, false, false
 	}
-	return idx, x, true
+	return idx, x, y == s.ed.FocusRow(), true
 }
 
 // edHitCol converts the column cell, in cells of line line, into the column in
 // runes of the raw line, with markdown.MapCellToRaw on the segments the
 // view draws the line with: the resulting byte offset is counted in runes,
 // the unit of the editor's columns.
-func (s editorScreen) edHitCol(line, cell int) int {
+//
+// On the Focus Line (focus true) the text is raw and drawn after a gutter, so
+// the column comes from the editor instead of from the markdown segments.
+func (s editorScreen) edHitCol(line, cell int, focus bool) int {
+	if focus {
+		return s.ed.FocusCellToCol(cell)
+	}
 	raw := s.ed.LineAt(line)
 	off := markdown.MapCellToRaw(s.ed.LineSegments(line), cell)
 	if off < 0 {
@@ -325,11 +331,11 @@ func (s editorScreen) edUpdateMouse(m tea.MouseMsg) (editorScreen, tea.Cmd) {
 		if !s.dragging {
 			return s, nil
 		}
-		line, cell, ok := s.edHitLine(m.X, m.Y)
+		line, cell, focus, ok := s.edHitLine(m.X, m.Y)
 		if !ok {
 			return s, nil
 		}
-		s.ed = s.ed.SetSelection(s.dragLine, s.dragCol, line, s.edHitCol(line, cell))
+		s.ed = s.ed.SetSelection(s.dragLine, s.dragCol, line, s.edHitCol(line, cell, focus))
 		return s, nil
 	}
 
@@ -342,11 +348,11 @@ func (s editorScreen) edUpdateMouse(m tea.MouseMsg) (editorScreen, tea.Cmd) {
 
 	switch clicks {
 	case 1:
-		line, cell, ok := s.edHitLine(m.X, m.Y)
+		line, cell, focus, ok := s.edHitLine(m.X, m.Y)
 		if !ok {
 			return s, nil
 		}
-		col := s.edHitCol(line, cell)
+		col := s.edHitCol(line, cell, focus)
 		s.ed = s.ed.SetCursor(line, col)
 		// The click sets the anchor of a possible drag selection:
 		// mouse movements with the button pressed extend it from here.

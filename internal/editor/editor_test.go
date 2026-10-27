@@ -301,3 +301,18 @@ func TestQuoteBarInView(t *testing.T) {
 	}
 	t.Errorf("the empty quote line does not carry the bar:\n%s", view)
 }
+
+// TestFocusCellToColCompensatesGutter checks that a cell of the Focus Line is
+// converted to the column of the raw text taking the gutter (the width of
+// the markdown prefix) into account: in "- hello" the prefix is 2 cells wide, so
+// cell 2 is the first character of "hello", and cells inside the gutter land on
+// column 0.
+func TestFocusCellToColCompensatesGutter(t *testing.T) {
+	e := New([]string{"- hello"}, 20, 5).SetCursor(0, 0)
+
+	for cell, want := range map[int]int{0: 0, 1: 0, 2: 0, 4: 2, 7: 5, 30: 7} {
+		if got := e.FocusCellToCol(cell); got != want {
+			t.Errorf("FocusCellToCol(%d) = %d, want %d", cell, got, want)
+		}
+	}
+}

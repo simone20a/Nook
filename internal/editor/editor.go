@@ -89,6 +89,31 @@ func (e Editor) focusRow() int {
 	return r
 }
 
+// FocusRow is the screen row of the Focus Line, the one that shows the raw
+// text of the cursor's line.
+func (e Editor) FocusRow() int { return e.focusRow() }
+
+// FocusCellToCol converts a cell of the Focus Line (counted from the left of
+// the editor) into the column, in runes, of the cursor's line. The Focus Line
+// is drawn after a gutter as wide as the markdown prefix removed on the other
+// lines, and from the horizontal scroll: both are taken into account, so a
+// click on a character lands on that character.
+func (e Editor) FocusCellToCol(cell int) int {
+	raw := ""
+	if e.cursorLine >= 0 && e.cursorLine < len(e.lines) {
+		raw = e.lines[e.cursorLine]
+	}
+	cell -= markdown.PrefixWidth(raw)
+	if cell < 0 {
+		cell = 0
+	}
+	col := cell + e.hScroll
+	if n := runeLen(raw); col > n {
+		col = n
+	}
+	return col
+}
+
 // docIndexForRow converts a screen row into the document index.
 func (e Editor) docIndexForRow(r int) int {
 	return e.cursorLine - e.focusRow() + r
