@@ -2,7 +2,6 @@ package editor
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -97,34 +96,28 @@ func TestCtrlUpDownDoc(t *testing.T) {
 	}
 }
 
-// TestFormatPrefixApplies checks that ctrl+t followed by "b" applies the
-// bold marker used by toggleBold (see format.go) and that the key
-// does not also add its own text to the line.
-func TestFormatPrefixApplies(t *testing.T) {
+// TestCtrlTWantsPalette checks that ctrl+t asks the screen to open the
+// formatting palette without touching the text.
+func TestCtrlTWantsPalette(t *testing.T) {
 	e := New([]string{"a"}, 10, 5)
 
-	e = press(e, tea.KeyMsg{Type: tea.KeyCtrlT}, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("b")})
+	e = press(e, tea.KeyMsg{Type: tea.KeyCtrlT})
 
-	if got := e.Lines()[0]; got != "a****" {
-		t.Fatalf("Lines()[0] = %q, want %q (toggleBold marker)", got, "a****")
-	}
-	if strings.Contains(e.Lines()[0], "b") {
-		t.Fatalf("Lines()[0] = %q, the prefix letter must not end up in the text", e.Lines()[0])
-	}
-}
-
-// TestSystemKeyAfterPrefix checks that a system key after ctrl+t cancels
-// the prefix and is handled normally, without formatting.
-func TestSystemKeyAfterPrefix(t *testing.T) {
-	e := New([]string{"a"}, 10, 5)
-
-	e = press(e, tea.KeyMsg{Type: tea.KeyCtrlT}, tea.KeyMsg{Type: tea.KeyCtrlS})
-
-	if !e.WantsSave {
-		t.Fatal("WantsSave = false, want true")
+	if !e.WantsPalette {
+		t.Fatal("WantsPalette = false, want true")
 	}
 	if got := e.Lines()[0]; got != "a" {
 		t.Fatalf("Lines()[0] = %q, want %q (no formatting)", got, "a")
+	}
+}
+
+// TestApplyFormatLetter checks that ApplyFormat("b") adds the bold marker used
+// by toggleBold (see format.go).
+func TestApplyFormatLetter(t *testing.T) {
+	e := New([]string{"a"}, 10, 5).ApplyFormat("b")
+
+	if got := e.Lines()[0]; got != "a****" {
+		t.Fatalf("Lines()[0] = %q, want %q (toggleBold marker)", got, "a****")
 	}
 }
 

@@ -12,11 +12,9 @@ import (
 //   - system: "ctrl+s" (or "f2") saves, "ctrl+q" asks to exit (the screen
 //     decides whether to show the Save/Discard/Cancel popup based on Dirty),
 //     "ctrl+c" always asks to exit.
-//   - formatting: "ctrl+t" prefix, the next letter applies the action;
-//     any other key cancels the wait and is handled normally further
-//     down. "f3" does not wait for a letter: it signals with WantsPalette that the
-//     screen has to open the formatting palette, which then applies the
-//     chosen entry with ApplyFormat.
+//   - formatting: "ctrl+t" signals with WantsPalette that the screen has to
+//     open the formatting palette, which then applies the chosen entry (picked
+//     with its letter, or with the arrows and enter) through ApplyFormat.
 //   - movement: arrows, "home", "end", "ctrl+up", "ctrl+down", "ctrl+home",
 //     "ctrl+end", "pgup", "pgdown"; "ctrl+left"/"alt+left" go to the start
 //     of the current or previous word, "ctrl+right"/"alt+right" to the end
@@ -36,19 +34,8 @@ func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	// ctrl+c always quits, even with the formatting prefix pending.
 	if s == "ctrl+c" {
-		e.awaitingFormat = false
 		e.WantsQuit = true
 		return e, nil
-	}
-
-	// "ctrl+t" prefix: ONLY a formatting letter consumes it.
-	// Any other key cancels the wait and continues with normal handling
-	// (system, movements, text), without losing its own effect.
-	if e.awaitingFormat {
-		e.awaitingFormat = false
-		if isFormatKey(s) {
-			return e.applyFormatKey(s), nil
-		}
 	}
 
 	switch s {
@@ -59,9 +46,7 @@ func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case "ctrl+q", "esc":
 		e.WantsExit = true
 	case "ctrl+t":
-		e.awaitingFormat = true
-	case "f3":
-		// F3 is not a prefix: it asks the screen to open the palette.
+		// It asks the screen to open the formatting palette.
 		e.WantsPalette = true
 
 	case "up":
@@ -156,18 +141,8 @@ func (e Editor) insertKeyText(key tea.KeyMsg) Editor {
 	return e
 }
 
-// isFormatKey reports whether s is one of the letters that consume the "ctrl+t" prefix.
-func isFormatKey(s string) bool {
-	switch s {
-	case "b", "i", "h", "k", "x", "l", "q", "s", "u", "0":
-		return true
-	}
-	return false
-}
-
-// applyFormatKey applies the formatting chosen by the key that follows the
-// "ctrl+t" prefix. An unexpected key does nothing (the wait has already been
-// cancelled by Update, which handles it normally).
+// applyFormatKey applies the formatting of the given letter; an unexpected
+// letter does nothing.
 func (e Editor) applyFormatKey(s string) Editor {
 	switch s {
 	case "b":
@@ -194,9 +169,8 @@ func (e Editor) applyFormatKey(s string) Editor {
 	return e
 }
 
-// ApplyFormat applies the formatting of the given letter: it performs the same
-// action as applyFormatKey (the one of the "ctrl+t" prefix) for b i h k x l q s u
-// 0. It is the entry point of the formatting palette (F3), which chooses the
+// ApplyFormat applies the formatting of the given letter (b i h k x l q s u 0).
+// It is the entry point of the formatting palette (ctrl+t), which chooses the
 // letter and passes it here; an unexpected letter leaves the editor unchanged.
 func (e Editor) ApplyFormat(letter string) Editor {
 	return e.applyFormatKey(letter)

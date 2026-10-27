@@ -21,27 +21,19 @@ func (e Editor) View() string {
 	return out
 }
 
-// Editor footer texts: the available keys, or the wait for the key
-// that applies formatting (ctrl+t already pressed).
-const (
-	edFooterHint   = "ctrl+s save · esc exit · ctrl+t format · ctrl+/ help"
-	edFooterFormat = "ctrl+t …"
-)
+// edFooterHint is the footer text: the essential keys.
+const edFooterHint = "ctrl+s save · esc exit · ctrl+t format · ctrl+/ help"
 
 // Footer renders the last row of the editor screen: a single row
 // truncated to the width, in dimmed colour via theme.DimText and padded
-// with spaces on the right. While the editor waits for the formatting key it shows
-// "ctrl+t …". It is not part of View: the screen reserves a row for it and gives
-// the editor a content height reduced by one.
+// with spaces on the right. It is not part of View: the screen reserves a
+// row for it, plus an empty one above, and gives the editor a content height
+// reduced by two.
 func (e Editor) Footer() string {
 	if e.width <= 0 {
 		return ""
 	}
-	text := edFooterHint
-	if e.awaitingFormat {
-		text = edFooterFormat
-	}
-	plain := truncate(text, e.width)
+	plain := truncate(edFooterHint, e.width)
 	pad := e.width - ansi.StringWidth(plain)
 	if pad < 0 {
 		pad = 0

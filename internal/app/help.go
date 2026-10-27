@@ -63,7 +63,7 @@ var helpPages = []helpPage{
 	}},
 	{"Editor", []helpRow{
 		hh("Files"),
-		hk("F2 / ctrl+s", "save"),
+		hk("ctrl+s (or F2)", "save"),
 		hk("esc / ctrl+q", "back to the list (asks if unsaved)"),
 		hh("Moving"),
 		hk("arrows", "move the cursor"),
@@ -82,9 +82,10 @@ var helpPages = []helpPage{
 	}},
 	{"Formatting", []helpRow{
 		hh("Palette"),
-		hk("F3", "open the formatting palette"),
-		hk("↑ / ↓, enter, esc", "choose, apply, close"),
-		hh("Shortcut: ctrl+t, then a letter"),
+		hk("ctrl+t", "open the formatting palette"),
+		hk("a letter", "apply that format at once"),
+		hk("↑ / ↓, enter, esc", "or choose, apply, close"),
+		hh("Letters in the palette"),
 		hk("b", "bold"),
 		hk("i", "italic"),
 		hk("s", "strikethrough"),
@@ -113,7 +114,7 @@ var helpPages = []helpPage{
 	}},
 	{"General", []helpRow{
 		hh("Help"),
-		hk("F1 / ctrl+/", "open or close this help"),
+		hk("ctrl+/ (or F1)", "open or close this help"),
 		hk("?", "open help from the list"),
 		hk("esc", "close this help"),
 		hh("Quit"),

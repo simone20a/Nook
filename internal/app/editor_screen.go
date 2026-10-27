@@ -19,7 +19,7 @@ type edMode int
 const (
 	edEditing edMode = iota
 	edPrompt
-	// edFormatPalette is the formatting palette opened by F3.
+	// edFormatPalette is the formatting palette opened by ctrl+t.
 	edFormatPalette
 )
 
@@ -67,11 +67,11 @@ func newEditorScreen(st *store.Store, note *store.Note, w, h int) editorScreen {
 }
 
 // edHeight is the height to give the text for a content height ch: the
-// content is ch rows high minus the footer one, which the screen draws
-// below the text.
+// content is ch rows high minus the footer one and the empty row above it,
+// which the screen draws below the text.
 func edHeight(ch int) int {
-	if ch-1 > 0 {
-		return ch - 1
+	if ch-2 > 0 {
+		return ch - 2
 	}
 	return 1
 }
@@ -182,7 +182,7 @@ func (s editorScreen) edUpdateKey(keyMsg tea.KeyMsg) (editorScreen, tea.Cmd) {
 	}
 
 	if s.ed.WantsPalette {
-		// F3: the formatting palette opens on the first entry.
+		// ctrl+t: the formatting palette opens on the first entry.
 		s.ed.WantsPalette = false
 		s.mode = edFormatPalette
 		s.paletteChoice = 0
@@ -362,7 +362,7 @@ func (s editorScreen) edUpdateMouse(m tea.MouseMsg) (editorScreen, tea.Cmd) {
 	return s, nil
 }
 
-// --- Formatting palette (F3) ---
+// --- Formatting palette (ctrl+t) ---
 
 // edPaletteAction is an entry of the formatting palette: the letter that
 // Editor.ApplyFormat interprets and the short label shown in the popup.
@@ -388,8 +388,9 @@ var formatPaletteActions = []edPaletteAction{
 
 // edUpdatePalette handles the keys of the formatting palette: up and down
 // change the entry circularly, enter applies the formatting of the current
-// entry and closes, esc closes without applying. As long as the palette is open every
-// other key is suspended, as in the exit popup.
+// entry and closes, the letter shown next to an entry applies it straight
+// away, esc (or ctrl+t again) closes without applying. As long as the palette
+// is open every other key is suspended, as in the exit popup.
 func (s editorScreen) edUpdatePalette(key string) (editorScreen, tea.Cmd) {
 	switch key {
 	case "up":
@@ -402,8 +403,17 @@ func (s editorScreen) edUpdatePalette(key string) (editorScreen, tea.Cmd) {
 		}
 		s.ed = s.ed.ApplyFormat(formatPaletteActions[s.paletteChoice].key)
 		s.mode = edEditing
-	case "esc":
+	case "esc", "ctrl+t":
 		s.mode = edEditing
+	default:
+		for i, a := range formatPaletteActions {
+			if a.key == key {
+				s.paletteChoice = i
+				s.ed = s.ed.ApplyFormat(a.key)
+				s.mode = edEditing
+				break
+			}
+		}
 	}
 	return s, nil
 }
@@ -421,6 +431,7 @@ func formatPaletteBox(s editorScreen) string {
 			lines = append(lines, edPromptStyle.Render(" "+label+" "))
 		}
 	}
+	lines = append(lines, edPromptStyle.Render("letter, or ↑/↓ enter"))
 	return strings.Join(lines, "\n")
 }
 
@@ -485,7 +496,7 @@ func (s editorScreen) View() string {
 	chh := contentH(s.height)
 	var lines []string
 	if body := s.ed.View(); body != "" {
-		lines = append(strings.Split(body, "\n"), s.ed.Footer())
+		lines = append(strings.Split(body, "\n"), "", s.ed.Footer())
 	}
 	if chh > 0 && len(lines) > chh {
 		lines = lines[:chh]

@@ -192,7 +192,7 @@ func TestNewNoteStaysInList(t *testing.T) {
 	}
 }
 
-// TestPaletteOpensAndApplies checks that F3 opens the formatting palette
+// TestPaletteOpensAndApplies checks that ctrl+t opens the formatting palette
 // (mode edFormatPalette, without applying anything) and that enter applies the
 // current entry, that is bold, to the editor line under the cursor: the word
 // selected is wrapped in "**".
@@ -213,23 +213,23 @@ func TestPaletteOpensAndApplies(t *testing.T) {
 		height: h,
 	}
 
-	// F3 opens the palette: the text does not change and the flag that requests it is
+	// ctrl+t opens the palette: the text does not change and the flag that requests it is
 	// cleared by the screen.
-	m2, _, quit := m.updateKey(tea.KeyMsg{Type: tea.KeyF3})
+	m2, _, quit := m.updateKey(tea.KeyMsg{Type: tea.KeyCtrlT})
 	if quit {
-		t.Fatal("quit = true after f3, want false")
+		t.Fatal("quit = true after ctrl+t, want false")
 	}
 	if m2.screen != screenEditor {
-		t.Fatalf("screen = %v after f3, want screenEditor", m2.screen)
+		t.Fatalf("screen = %v after ctrl+t, want screenEditor", m2.screen)
 	}
 	if m2.editor.mode != edFormatPalette {
-		t.Fatalf("editor.mode = %v after f3, want edFormatPalette", m2.editor.mode)
+		t.Fatalf("editor.mode = %v after ctrl+t, want edFormatPalette", m2.editor.mode)
 	}
 	if m2.editor.ed.WantsPalette {
-		t.Error("WantsPalette = true after f3: the screen must clear it")
+		t.Error("WantsPalette = true after ctrl+t: the screen must clear it")
 	}
 	if got := m2.editor.ed.Lines()[0]; got != "a test line" {
-		t.Fatalf("line = %q after f3, want %q: f3 must not format", got, "a test line")
+		t.Fatalf("line = %q after ctrl+t, want %q: ctrl+t must not format", got, "a test line")
 	}
 
 	// Enter applies the current entry (the first one: bold "b") and closes the
@@ -283,5 +283,25 @@ func TestMultiClick(t *testing.T) {
 	prev = edClick{x: x, y: y, count: 3, at: base}
 	if got := edClickCount(prev, base.Add(time.Millisecond), x, y); got != 1 {
 		t.Errorf("edClickCount = %d for the fourth click, want 1", got)
+	}
+}
+
+// TestPaletteLetterApplies checks that pressing the letter of an entry while
+// the palette is open applies it at once and goes back to editing.
+func TestPaletteLetterApplies(t *testing.T) {
+	const w, h = 80, 24
+	ed := editor.New([]string{"a test line"}, contentW(w), edHeight(contentH(h))).SelectWord()
+
+	m := Model{width: w, height: h, screen: screenEditor}
+	m.editor = editorScreen{ed: ed, mode: edEditing, width: w, height: h}
+
+	m, _, _ = m.updateKey(tea.KeyMsg{Type: tea.KeyCtrlT})
+	m, _, _ = m.updateKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("i")})
+
+	if m.editor.mode != edEditing {
+		t.Fatalf("editor.mode = %v after the letter, want edEditing", m.editor.mode)
+	}
+	if got, want := m.editor.ed.Lines()[0], "a test _line_"; got != want {
+		t.Fatalf("line = %q after \"i\", want %q", got, want)
 	}
 }

@@ -105,7 +105,7 @@ as written, with no markdown applied.
 
 | Key | Action |
 |---|---|
-| `F2` / `ctrl+s` | save (confirmation toast) |
+| `ctrl+s` / `F2` | save (confirmation toast) |
 | `esc` / `ctrl+q` | back to the list; with unsaved changes opens the *Save / Discard / Cancel* popup |
 | `ctrl+c` | quit immediately |
 | `↑` `↓` `←` `→` | move |
@@ -138,10 +138,9 @@ selection. With the mouse enabled, native terminal selection is done by holding
 
 ## Formatting
 
-`F3` opens the **formatting palette**: `↑`/`↓` to scroll through the actions,
-`enter` to apply, `esc` to close without applying.
-
-Alternatively, `ctrl+t` followed by a letter:
+`ctrl+t` opens the **formatting palette**. Press the letter shown next to an entry
+to apply that format at once, or use `↑`/`↓` and `enter`; `esc` (or `ctrl+t` again)
+closes it without applying anything.
 
 | | | | |
 |---|---|---|---|
@@ -149,14 +148,12 @@ Alternatively, `ctrl+t` followed by a letter:
 | `u` list | `x` checkbox | `l` link | `q` quote |
 | `h` cycling heading (`#` → `##` → `###`) | `0` removes the heading | | |
 
-If another key arrives after `ctrl+t`, the wait is cancelled and the key does its
-usual job. With an active selection the action wraps the selected text; with no
-selection on the Focus Line you can also type markdown by hand, since the text
-there is raw.
+With an active selection the action wraps the selected text; with no selection on
+the Focus Line you can also type markdown by hand, since the text there is raw.
 
 ## Help
 
-`F1` or `ctrl+/` opens the help popup on any screen; `?` also works from the list
+`ctrl+/` or `F1` opens the help popup on any screen; `?` also works from the list
 (where you are not typing text). The popup is organised in tabs — **List**,
 **Editor**, **Formatting**, **Mouse** and **General** — and opens on the one that
 matches the current screen. Use `←`/`→` (or `tab`, or `1`–`5`) to switch tab,

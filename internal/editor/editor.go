@@ -14,20 +14,19 @@ type Editor struct {
 	WantsSave bool // exported, true when Update receives ctrl+s
 	WantsExit bool // exported, true when Update receives ctrl+q (or esc): asks to exit
 	WantsQuit bool // exported, true when Update receives ctrl+c: always quits
-	// WantsPalette is exported: true when Update receives f3, that is when the
+	// WantsPalette is exported: true when Update receives ctrl+t, that is when the
 	// formatting palette has to be opened. The screen reads it and resets it.
 	WantsPalette bool
 
-	lines          []string
-	cursorLine     int
-	cursorCol      int
-	hScroll        int
-	width          int
-	height         int
-	selecting      bool
-	anchorLine     int
-	anchorCol      int
-	awaitingFormat bool // true after ctrl+t: the next key formats
+	lines      []string
+	cursorLine int
+	cursorCol  int
+	hScroll    int
+	width      int
+	height     int
+	selecting  bool
+	anchorLine int
+	anchorCol  int
 }
 
 // runeLen counts the runes of a string.
@@ -70,10 +69,6 @@ func (e Editor) CursorRow() int { return e.cursorLine + 1 }
 
 // CursorCol1 is the cursor's column number, 1-based.
 func (e Editor) CursorCol1() int { return e.cursorCol + 1 }
-
-// AwaitingFormat says whether the editor is waiting for the key that applies formatting
-// (true after ctrl+t): the screen uses it for the footer text.
-func (e Editor) AwaitingFormat() bool { return e.awaitingFormat }
 
 // SetSize updates the dimensions and makes the cursor visible.
 func (e Editor) SetSize(width, height int) Editor {
