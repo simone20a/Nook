@@ -141,9 +141,11 @@ there is raw.
 
 ## Help
 
-`F1` or `ctrl+/` opens and closes the help popup on any screen; `?` also works
-from the list (where you are not typing text). Any other key closes the popup.
-
+`F1` or `ctrl+/` opens the help popup on any screen; `?` also works from the list
+(where you are not typing text). The popup is organised in tabs — **List**,
+**Editor**, **Formatting**, **Mouse** and **General** — and opens on the one that
+matches the current screen. Use `←`/`→` (or `tab`, or `1`–`5`) to switch tab,
+`↑`/`↓` to scroll, and `esc`, `q` or `F1` to close it.
 
 ## Key diagnostics
 
