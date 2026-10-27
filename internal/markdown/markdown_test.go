@@ -107,7 +107,39 @@ func TestRenderLine(t *testing.T) {
 		{
 			name: "opening fence",
 			raw:  "```go",
-			want: []Segment{{Text: "```go", Style: StyleFence}},
+			want: []Segment{{Text: "┌─ go ", Style: StyleFence}},
+		},
+		{
+			name:        "closing fence",
+			raw:         "```",
+			insideFence: true,
+			want:        []Segment{{Text: "└─", Style: StyleFence}},
+		},
+		{
+			name: "opening fence without language",
+			raw:  "```",
+			want: []Segment{{Text: "┌─", Style: StyleFence}},
+		},
+		{
+			name: "rule dashes",
+			raw:  "---",
+			want: []Segment{{Text: "───", Style: StyleRule}},
+		},
+		{
+			name: "rule spaced stars",
+			raw:  "* * *",
+			want: []Segment{{Text: "───", Style: StyleRule}},
+		},
+		{
+			name: "two dashes are text",
+			raw:  "--",
+			want: []Segment{{Text: "--", Style: StyleNone}},
+		},
+		{
+			name:        "rule inside a fence is code",
+			raw:         "---",
+			insideFence: true,
+			want:        []Segment{{Text: "---", Style: StyleCodeBlock}},
 		},
 		{
 			name: "simple line",
@@ -200,6 +232,9 @@ func TestPrefixWidth(t *testing.T) {
 		{"- [ ] d", 6},
 		{"1. v", 3},
 		{"plain", 0},
+		{"---", 0},
+		{"* * *", 0},
+		{"```go", 0},
 	}
 
 	for _, tc := range cases {

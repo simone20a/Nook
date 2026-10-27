@@ -91,6 +91,11 @@ but keeps the bar. Lines that are not in focus use a muted palette that is
 **fixed** and identical for all of them: the dimming does not depend on the
 distance from the Focus Line. Long lines are truncated with `…`.
 
+Horizontal rules (`---`, `***`, `___`) are drawn as a full-width line, and fenced
+code blocks (```` ``` ```` or `~~~`) as a shaded panel closed by a top edge that shows
+the language (`┌─ go ────`) and a bottom edge (`└────`); the code inside is shown
+as written, with no markdown applied.
+
 | Key | Action |
 |---|---|
 | `F2` / `ctrl+s` | save (confirmation toast) |

@@ -36,6 +36,8 @@ const (
 	// StyleQuoteBar is the segment of the vertical bar that runs alongside a
 	// quote; the text of the quote uses StyleQuote.
 	StyleQuoteBar
+	// StyleRule is a horizontal rule (---, ***, ___).
+	StyleRule
 )
 
 // Segment is a portion of a line with its style.
@@ -98,15 +100,54 @@ func isFenceLine(s string) bool {
 	return strings.HasPrefix(t, "```") || strings.HasPrefix(t, "~~~")
 }
 
+// isRule reports whether the line is a horizontal rule: at least three
+// "-", "*" or "_" (all the same), optionally separated by spaces or tabs.
+func isRule(s string) bool {
+	t := strings.TrimSpace(s)
+	if t == "" || strings.IndexByte("-*_", t[0]) < 0 {
+		return false
+	}
+	n := 0
+	for i := 0; i < len(t); i++ {
+		switch t[i] {
+		case t[0]:
+			n++
+		case ' ', '\t':
+		default:
+			return false
+		}
+	}
+	return n >= 3
+}
+
+// fenceLabel returns the text of the line that opens or closes a code
+// block: the language after the backticks, trimmed.
+func fenceLabel(raw string) string {
+	t := strings.TrimSpace(raw)
+	return strings.TrimSpace(strings.TrimLeft(t, "`~"))
+}
+
 // RenderLine breaks a markdown line into its styled segments. When
 // insideFence is true the line belongs to a code block: it is returned
-// untouched, without any replacement.
+// untouched, without any replacement. A fence line becomes the top
+// (┌─ language) or bottom (└─) edge of the block, and a horizontal rule
+// becomes a line of "─"; the caller extends both to the width of the screen.
 func RenderLine(raw string, insideFence bool) []Segment {
+	if isFenceLine(raw) {
+		text := "└─"
+		if !insideFence {
+			text = "┌─"
+			if lang := fenceLabel(raw); lang != "" {
+				text += " " + lang + " "
+			}
+		}
+		return []Segment{{Text: text, Style: StyleFence, RawFrom: 0, RawTo: len(raw)}}
+	}
 	if insideFence {
 		return []Segment{{Text: raw, Style: StyleCodeBlock, RawFrom: 0, RawTo: len(raw)}}
 	}
-	if isFenceLine(raw) {
-		return []Segment{{Text: raw, Style: StyleFence, RawFrom: 0, RawTo: len(raw)}}
+	if isRule(raw) {
+		return []Segment{{Text: "───", Style: StyleRule, RawFrom: 0, RawTo: len(raw)}}
 	}
 
 	prefix, rest, base, off := splitPrefix(raw)
@@ -271,6 +312,9 @@ func byteOffsetOfRune(s string, idx int) int {
 // occupies. All recognised prefixes are ASCII, so the number of
 // runes equals the number of cells.
 func PrefixWidth(raw string) int {
+	if isRule(raw) || isFenceLine(raw) {
+		return 0
+	}
 	prefix, rest, _, _ := splitPrefix(raw)
 	removed := utf8.RuneCountInString(raw) - utf8.RuneCountInString(rest)
 	if prefix != nil || removed > 0 {

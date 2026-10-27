@@ -78,7 +78,26 @@ func (e Editor) renderRow(r int) string {
 		}
 		b.WriteString(st.Render(seg.Text))
 	}
+	if n := len(segs); n > 0 {
+		b.WriteString(blockFill(segs[n-1].Style, e.width-ansi.StringWidth(b.String())))
+	}
 	return truncate(b.String(), e.width)
+}
+
+// blockFill extends rules and code fences with "─" up to the width of the
+// editor, and code lines with spaces, so that a code block reads as a panel.
+// It returns "" for every other style or when there is no room left.
+func blockFill(sty markdown.Style, n int) string {
+	if n <= 0 {
+		return ""
+	}
+	switch sty {
+	case markdown.StyleRule, markdown.StyleFence:
+		return theme.DimStyles[sty].Render(strings.Repeat("─", n))
+	case markdown.StyleCodeBlock:
+		return theme.DimStyles[sty].Render(strings.Repeat(" ", n))
+	}
+	return ""
 }
 
 // truncate shortens s to the width w in cells, adding "…" if it cuts.

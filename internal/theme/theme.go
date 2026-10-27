@@ -49,7 +49,8 @@ var fullSpecs = map[markdown.Style]spec{
 	markdown.StyleBullet:    {light: "208", dark: "214"},
 	markdown.StyleCheckbox:  {light: "65", dark: "71"},
 	markdown.StyleFence:     {faint: true},
-	markdown.StyleCodeBlock: {light: "248", dark: "245"},
+	markdown.StyleCodeBlock: {light: "248", dark: "245", bgLight: "254", bgDark: "235"},
+	markdown.StyleRule:      {light: "250", dark: "241"},
 	markdown.StyleNone:      {},
 }
 
@@ -73,7 +74,8 @@ var dimSpecs = map[markdown.Style]spec{
 	markdown.StyleBullet:    {light: "137", dark: "94", faint: true},
 	markdown.StyleCheckbox:  {light: "108", dark: "65", faint: true},
 	markdown.StyleFence:     {light: "250", dark: "241", faint: true},
-	markdown.StyleCodeBlock: {light: "250", dark: "240", faint: true},
+	markdown.StyleCodeBlock: {light: "250", dark: "240", bgLight: "255", bgDark: "234", faint: true},
+	markdown.StyleRule:      {light: "250", dark: "240", faint: true},
 	markdown.StyleNone:      {light: "250", dark: "241", faint: true},
 }
 
