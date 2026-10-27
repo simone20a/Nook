@@ -365,25 +365,28 @@ func (s editorScreen) edUpdateMouse(m tea.MouseMsg) (editorScreen, tea.Cmd) {
 // --- Formatting palette (ctrl+t) ---
 
 // edPaletteAction is an entry of the formatting palette: the letter that
-// Editor.ApplyFormat interprets and the short label shown in the popup.
+// Editor.ApplyFormat interprets, the label shown in the popup, a short
+// example of the result and the group it is listed under.
 type edPaletteAction struct {
-	key   string
-	label string
+	key     string
+	label   string
+	example string
+	group   string
 }
 
-// formatPaletteActions are the 10 actions of the formatting palette,
-// in the order shown: the letter is the one of applyFormatKey.
+// formatPaletteActions are the 10 actions of the formatting palette, in the
+// order shown (grouped): the letter is the one of ApplyFormat.
 var formatPaletteActions = []edPaletteAction{
-	{"b", "bold"},
-	{"i", "italic"},
-	{"h", "heading"},
-	{"k", "code"},
-	{"x", "checkbox"},
-	{"l", "link"},
-	{"q", "quote"},
-	{"s", "strike"},
-	{"u", "list"},
-	{"0", "remove heading"},
+	{"b", "Bold", "**text**", "Text"},
+	{"i", "Italic", "_text_", "Text"},
+	{"s", "Strikethrough", "~~text~~", "Text"},
+	{"k", "Code", "`text`", "Text"},
+	{"h", "Heading", "# → ## → ###", "Line"},
+	{"q", "Quote", "> text", "Line"},
+	{"u", "List", "- item", "Line"},
+	{"x", "Checkbox", "- [ ] task", "Line"},
+	{"0", "Remove heading", "plain line", "Line"},
+	{"l", "Link", "[text](url)", "Insert"},
 }
 
 // edUpdatePalette handles the keys of the formatting palette: up and down
@@ -418,20 +421,36 @@ func (s editorScreen) edUpdatePalette(key string) (editorScreen, tea.Cmd) {
 	return s, nil
 }
 
-// formatPaletteBox builds the content of the palette popup: the title row
-// and one row per action, with the current entry between square brackets.
+// Widths of the columns of the palette popup.
+const (
+	paletteLabelW   = 15
+	paletteExampleW = 14
+)
+
+// formatPaletteBox builds the content of the palette popup: a title with the
+// way to use it, then the actions grouped under a heading, each on one row
+// with its letter, its name and an example of the result. The current entry
+// is highlighted.
 func formatPaletteBox(s editorScreen) string {
-	lines := make([]string, 0, len(formatPaletteActions)+1)
-	lines = append(lines, edPromptStyle.Render("Formatting"))
-	for i, a := range formatPaletteActions {
-		label := a.label + " (" + a.key + ")"
-		if i == s.paletteChoice {
-			lines = append(lines, theme.Selected.Render("["+label+"]"))
-		} else {
-			lines = append(lines, edPromptStyle.Render(" "+label+" "))
-		}
+	width := 2 + 1 + 2 + paletteLabelW + paletteExampleW
+	lines := []string{
+		theme.BannerAcc.Render("Formatting"),
+		edPromptStyle.Render("press a letter, or ↑/↓ and enter"),
 	}
-	lines = append(lines, edPromptStyle.Render("letter, or ↑/↓ enter"))
+	group := ""
+	for i, a := range formatPaletteActions {
+		if a.group != group {
+			group = a.group
+			lines = append(lines, edPromptStyle.Render(strings.ToUpper(group)))
+		}
+		if i == s.paletteChoice {
+			plain := "› " + a.key + "  " + padPlain(a.label, paletteLabelW) + padPlain(a.example, paletteExampleW)
+			lines = append(lines, theme.Rev.Render(padPlain(plain, width)))
+			continue
+		}
+		lines = append(lines, "  "+theme.BannerAcc.Render(a.key)+"  "+
+			padPlain(a.label, paletteLabelW)+edPromptStyle.Render(padPlain(a.example, paletteExampleW)))
+	}
 	return strings.Join(lines, "\n")
 }
 
