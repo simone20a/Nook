@@ -9,14 +9,14 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// TestDebugKeyLog checks key diagnostics: with MDEDIT_DEBUG_KEYS=1
-// logKey appends the KeyMsg to ~/.mdedit/keys.log, while with the variable
+// TestDebugKeyLog checks key diagnostics: with NOOK_DEBUG_KEYS=1
+// logKey appends the KeyMsg to ~/.nook/keys.log, while with the variable
 // off it creates no file.
 func TestDebugKeyLog(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 
-	dir := filepath.Join(home, ".mdedit")
+	dir := filepath.Join(home, ".nook")
 	path := filepath.Join(dir, "keys.log")
 
 	t.Setenv(debugKeysEnv, "1")

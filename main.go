@@ -12,14 +12,14 @@ import (
 )
 
 func main() {
-	path := os.Getenv("MDEDIT_DB")
+	path := os.Getenv("NOOK_DB")
 	if path == "" {
 		home, err := os.UserHomeDir()
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
 		}
-		path = filepath.Join(home, ".mdedit", "notes.db")
+		path = filepath.Join(home, ".nook", "notes.db")
 	}
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		fmt.Fprintln(os.Stderr, err)

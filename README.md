@@ -35,9 +35,8 @@ With the `Makefile`: `make build`, `make run`, `make test`, `make vet`, `make fm
 ```
 
 On start-up the note list opens; from there you create, open, rename and trash
-notes. Storage is SQLite at `~/.mdedit/notes.db` (override with `MDEDIT_DB`; the
-folder and variable names are the project's historical ones, from before it was
-called Nook), with soft deletion: trashed notes remain recoverable from the trash.
+notes. Storage is SQLite at `~/.nook/notes.db` (override with `NOOK_DB`),
+with soft deletion: trashed notes remain recoverable from the trash.
 
 The interface has margins of 2 columns and 1 row on every side (reset below 30
 columns or 10 rows) and a footer with the main keys; each screen has its own help
@@ -155,8 +154,8 @@ equivalents apply (`ctrl+←`/`ctrl+→`).
 
 ## Key diagnostics
 
-With `MDEDIT_DEBUG_KEYS=1` every `tea.KeyMsg` received is appended to
-`~/.mdedit/keys.log` (one line per key, with `Type`, `Runes`, `Alt`, `Paste` and
+With `NOOK_DEBUG_KEYS=1` every `tea.KeyMsg` received is appended to
+`~/.nook/keys.log` (one line per key, with `Type`, `Runes`, `Alt`, `Paste` and
 `String`), useful to see what your terminal actually sends. Messages the
 application doesn't recognise are logged as well — for example unknown escape
 sequences (CSI), which bubbletea delivers as generic messages — in the format:
@@ -172,7 +171,7 @@ ticks that dismiss toasts) don't end up in this log: keys stay recorded in the
 written and the file is not created.
 
 ```sh
-MDEDIT_DEBUG_KEYS=1 ./nook
+NOOK_DEBUG_KEYS=1 ./nook
 ```
 
 ## Prototype limitations
