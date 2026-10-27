@@ -24,7 +24,7 @@ func (e Editor) View() string {
 // Editor footer texts: the available keys, or the wait for the key
 // that applies formatting (ctrl+t already pressed).
 const (
-	edFooterHint   = "F2 save · esc exit · F3 format · F1 help"
+	edFooterHint   = "ctrl+s save · esc exit · ctrl+t format · ctrl+/ help"
 	edFooterFormat = "ctrl+t …"
 )
 

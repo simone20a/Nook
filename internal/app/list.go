@@ -750,7 +750,7 @@ func (s listScreen) listTitle(cw int) string {
 }
 
 // listFooterHint is the text of the list footer.
-const listFooterHint = "↑↓ move · enter open · ← back · n note · c folder · ? help"
+const listFooterHint = "enter open · n new note · c new folder · ? help"
 
 // listFooter renders the list footer: a single row truncated to cw columns,
 // in dimmed colour without Faint.
