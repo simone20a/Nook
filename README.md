@@ -195,3 +195,7 @@ NOOK_DEBUG_KEYS=1 ./nook
 ## How it was built
 
 The basic structure of Nook has been created **exclusively with the coding agent [Orcrist](https://github.com/simone20a/Orcrist)**, using only the **DeepSeek Flash** and **DeepSeek Pro** models.
+
+## License
+
+Nook is released under the [MIT License](LICENSE).
