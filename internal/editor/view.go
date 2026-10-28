@@ -150,10 +150,8 @@ func isInsideFence(lines []string, idx int) bool {
 // All the text shown is rendered with theme.Selected (bold), except the cursor
 // character, which stays in reverse.
 func (e Editor) renderFocusRow() string {
-	raw := ""
-	if e.cursorLine >= 0 && e.cursorLine < len(e.lines) {
-		raw = e.lines[e.cursorLine]
-	}
+	focus := e.focusLine()
+	raw := e.LineAt(focus)
 
 	// The removed block prefix is compensated: spaces for the markers, but
 	// the vertical bar for quotes, so the bar stays continuous even
@@ -183,9 +181,14 @@ func (e Editor) renderFocusRow() string {
 		end = len(runes)
 	}
 
+	// While a selection is dragged the Focus Line can be another line than the
+	// cursor's: then no cursor is drawn on it.
 	cursorPos := padW + (e.cursorCol - e.hScroll)
+	if focus != e.cursorLine {
+		cursorPos = -1
+	}
 
-	selFrom, selTo, hasSel := e.selectionOnLine(e.cursorLine)
+	selFrom, selTo, hasSel := e.selectionOnLine(focus)
 
 	var b strings.Builder
 	var run strings.Builder

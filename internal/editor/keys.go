@@ -32,6 +32,9 @@ func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	}
 	s := key.String()
 
+	// Any key ends a frozen view (see DragSelection).
+	e.unfreeze()
+
 	// ctrl+c always quits, even with the formatting prefix pending.
 	if s == "ctrl+c" {
 		e.WantsQuit = true

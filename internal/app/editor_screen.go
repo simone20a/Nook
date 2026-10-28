@@ -335,7 +335,7 @@ func (s editorScreen) edUpdateMouse(m tea.MouseMsg) (editorScreen, tea.Cmd) {
 		if !ok {
 			return s, nil
 		}
-		s.ed = s.ed.SetSelection(s.dragLine, s.dragCol, line, s.edHitCol(line, cell, focus))
+		s.ed = s.ed.DragSelection(s.dragLine, s.dragCol, line, s.edHitCol(line, cell, focus))
 		return s, nil
 	}
 

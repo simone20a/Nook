@@ -54,6 +54,17 @@ func (e Editor) SetSelection(anchorLine, anchorCol, line, col int) Editor {
 	return e
 }
 
+// DragSelection is SetSelection for a drag with the mouse: the selection
+// extends to (line, col) but the view stays still, so the Focus Line does not
+// move while the button is held. The view is released by the next key, click
+// or scroll.
+func (e Editor) DragSelection(anchorLine, anchorCol, line, col int) Editor {
+	focus, h := e.focusLine(), e.hScroll
+	e = e.SetSelection(anchorLine, anchorCol, line, col)
+	e.frozen, e.viewLine, e.hScroll = true, focus, h
+	return e
+}
+
 // clampLine brings a line back within the limits of the document.
 func clampLine(line, count int) int {
 	if line < 0 {

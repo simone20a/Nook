@@ -41,14 +41,6 @@ any other editor too. Deleted notes are not erased but moved to the hidden
 `~/.nook/.trash` folder, from where they can be restored. Only `.md` files and
 folders are shown, any other file in the folder is left alone.
 
-If you used an earlier version that kept notes in a SQLite database
-(`notes.db`), the first start imports it into files and renames it to
-`notes.db.imported`.
-
-The interface has margins of 2 columns and 1 row on every side (reset below 30
-columns or 10 rows) and a footer with the main keys; each screen has its own help
-popup with the full key map.
-
 ## Note list
 
 Entries sit in a card at most 60 columns wide, centred horizontally and vertically
@@ -107,7 +99,7 @@ as written, with no markdown applied.
 |---|---|
 | `ctrl+s` / `F2` | save (confirmation toast) |
 | `esc` / `ctrl+q` | back to the list; with unsaved changes opens the *Save / Discard / Cancel* popup |
-| `ctrl+c` | quit immediately |
+| `ctrl+c` | copy the selection; with nothing selected, quit immediately |
 | `↑` `↓` `←` `→` | move |
 | `home` / `end` | start / end of line |
 | `ctrl+home` / `ctrl+end`, `ctrl+↑` / `ctrl+↓` | start / end of document |
@@ -130,10 +122,16 @@ it.
 Scrolling with the mouse wheel or a two-finger touchpad gesture moves the document
 under the Focus Line, which stays where it is.
 
+Copying: with text selected, `ctrl+c` copies it to the system clipboard (the
+terminal keeps `cmd+c` / `ctrl+shift+c` for itself, so Nook can't receive them).
+It uses the OSC 52 terminal sequence (iTerm2, kitty, WezTerm, Alacritty, Windows
+Terminal, tmux…) and, as a fallback, `pbcopy`, `clip`, `wl-copy`, `xclip` or `xsel`.
+
 Mouse: a click makes the clicked line the Focus Line (the column is mapped onto
 the raw text through the markdown segments), a double click selects the word, a
 triple click the line; holding the left button and dragging extends the
-selection. With the mouse enabled, native terminal selection is done by holding
+selection while the Focus Line stays still (it moves to the end of the
+selection with the next key). With the mouse enabled, native terminal selection is done by holding
 `Shift` (or from the terminal's menu).
 
 ## Formatting

@@ -316,3 +316,25 @@ func TestFocusCellToColCompensatesGutter(t *testing.T) {
 		}
 	}
 }
+
+// TestDragSelectionKeepsFocusLine checks that dragging a selection leaves the
+// Focus Line on the line where the drag began, that the selection reaches the
+// dragged-to position, and that the next key brings the Focus Line to the cursor.
+func TestDragSelectionKeepsFocusLine(t *testing.T) {
+	e := New([]string{"aaa", "bbb", "ccc", "ddd", "eee"}, 20, 5).SetCursor(2, 1)
+
+	e = e.DragSelection(2, 1, 4, 2)
+
+	if got, ok := e.LineAtRow(e.FocusRow()); !ok || got != 2 {
+		t.Fatalf("Focus Line shows line %d (ok=%v), want 2", got, ok)
+	}
+	if text, ok := e.SelectedText(); !ok || text != "cc\nddd\nee" {
+		t.Fatalf("SelectedText = %q, %v; want %q", text, ok, "cc\nddd\nee")
+	}
+
+	next, _ := e.Update(tea.KeyMsg{Type: tea.KeyLeft})
+	e = next.(Editor)
+	if got, ok := e.LineAtRow(e.FocusRow()); !ok || got != 4 {
+		t.Fatalf("after a key the Focus Line shows line %d (ok=%v), want 4 (the cursor)", got, ok)
+	}
+}

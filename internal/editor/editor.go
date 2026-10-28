@@ -27,6 +27,12 @@ type Editor struct {
 	selecting  bool
 	anchorLine int
 	anchorCol  int
+
+	// frozen keeps the view still while a selection is dragged with the
+	// mouse: the Focus Line stays on viewLine even though the cursor (the end
+	// of the selection) is on another line. Any key, click or scroll ends it.
+	frozen   bool
+	viewLine int
 }
 
 // runeLen counts the runes of a string.
@@ -99,10 +105,7 @@ func (e Editor) FocusRow() int { return e.focusRow() }
 // lines, and from the horizontal scroll: both are taken into account, so a
 // click on a character lands on that character.
 func (e Editor) FocusCellToCol(cell int) int {
-	raw := ""
-	if e.cursorLine >= 0 && e.cursorLine < len(e.lines) {
-		raw = e.lines[e.cursorLine]
-	}
+	raw := e.LineAt(e.focusLine())
 	cell -= markdown.PrefixWidth(raw)
 	if cell < 0 {
 		cell = 0
@@ -114,9 +117,26 @@ func (e Editor) FocusCellToCol(cell int) int {
 	return col
 }
 
+// focusLine is the document line shown on the Focus Line: the cursor's line,
+// or the line the view was frozen on while a selection is being dragged.
+func (e Editor) focusLine() int {
+	if e.frozen && e.viewLine >= 0 && e.viewLine < len(e.lines) {
+		return e.viewLine
+	}
+	return e.cursorLine
+}
+
+// unfreeze ends the frozen view: the Focus Line goes back to the cursor.
+func (e *Editor) unfreeze() {
+	if e.frozen {
+		e.frozen = false
+		e.ensureCursorVisible()
+	}
+}
+
 // docIndexForRow converts a screen row into the document index.
 func (e Editor) docIndexForRow(r int) int {
-	return e.cursorLine - e.focusRow() + r
+	return e.focusLine() - e.focusRow() + r
 }
 
 // LineAtRow returns the index of the document line drawn on row r
@@ -161,6 +181,7 @@ func (e Editor) LineSegments(idx int) []markdown.Segment {
 // focus line, so the given line becomes the Focus Line.
 func (e Editor) SetCursor(line, col int) Editor {
 	e.clearSelection()
+	e.frozen = false
 	if line < 0 {
 		line = 0
 	}
@@ -263,7 +284,8 @@ func (e Editor) moveDown() Editor {
 // touchpad do.
 func (e Editor) Scroll(n int) Editor {
 	e.clearSelection()
-	e.cursorLine += n
+	e.cursorLine = e.focusLine() + n
+	e.frozen = false
 	if e.cursorLine > len(e.lines)-1 {
 		e.cursorLine = len(e.lines) - 1
 	}
@@ -402,6 +424,7 @@ func isSelectWordRune(r rune) bool {
 // word that precedes it is used. If there is no word under the cursor the
 // selection is cleared and the cursor stays where it is.
 func (e Editor) SelectWord() Editor {
+	e.frozen = false
 	line := e.clampedLine()
 	at := e.cursorCol
 	if at >= len(line) || !isSelectWordRune(line[at]) {
@@ -432,6 +455,7 @@ func (e Editor) SelectWord() Editor {
 // SelectLine selects the whole line of the cursor, from start to end, with the
 // same selection model (anchor at column 0, cursor at the end of the line).
 func (e Editor) SelectLine() Editor {
+	e.frozen = false
 	e.anchorLine = e.cursorLine
 	e.anchorCol = 0
 	e.selecting = true

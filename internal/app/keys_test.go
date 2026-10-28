@@ -305,3 +305,31 @@ func TestPaletteLetterApplies(t *testing.T) {
 		t.Fatalf("line = %q after \"i\", want %q", got, want)
 	}
 }
+
+// TestCtrlCCopiesSelection checks that ctrl+c copies the selected text in the
+// editor instead of quitting, and that it quits when nothing is selected.
+func TestCtrlCCopiesSelection(t *testing.T) {
+	const w, h = 80, 24
+	var copied string
+	old := copyText
+	copyText = func(s string) { copied = s }
+	t.Cleanup(func() { copyText = old })
+
+	ed := editor.New([]string{"a test line"}, contentW(w), edHeight(contentH(h))).SelectWord()
+	m := Model{width: w, height: h, screen: screenEditor}
+	m.editor = editorScreen{ed: ed, mode: edEditing, width: w, height: h}
+
+	m2, _, quit := m.updateKey(tea.KeyMsg{Type: tea.KeyCtrlC})
+	if quit {
+		t.Fatal("quit = true with a selection, want false (copy)")
+	}
+	if copied != "line" {
+		t.Fatalf("copied = %q, want %q", copied, "line")
+	}
+
+	m.editor.ed = editor.New([]string{"a test line"}, contentW(w), edHeight(contentH(h)))
+	if _, _, quit := m.updateKey(tea.KeyMsg{Type: tea.KeyCtrlC}); !quit {
+		t.Fatal("quit = false without a selection, want true")
+	}
+	_ = m2
+}
