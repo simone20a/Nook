@@ -25,19 +25,18 @@ import (
 //     and "ctrl+k" (from the cursor to the end of the line).
 //   - text: all the runes of key.Runes (space, IME, paste); a multi-line
 //     paste splits the line on '\n'.
-//   - history: "ctrl+z" undoes and "ctrl+y" redoes (a terminal sends
-//     ctrl+shift+z as plain ctrl+z, so the two cannot be told apart).
+//   - history: "ctrl+y" redoes. Undo (ctrl+shift+z) and redo (ctrl+shift+y)
+//     arrive from some terminals as escape sequences that the application
+//     decodes, and call Undo and Redo directly.
 func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	key, ok := msg.(tea.KeyMsg)
 	if !ok {
 		return e, nil
 	}
 
-	// Undo and redo; the changes made by every other key are recorded.
-	switch key.String() {
-	case "ctrl+z":
-		return e.Undo(), nil
-	case "ctrl+y":
+	// ctrl+y redoes (undo is asked by the screen, see Undo); the changes made
+	// by every other key are recorded.
+	if key.String() == "ctrl+y" {
 		return e.Redo(), nil
 	}
 	before := e.snapshot()

@@ -16,8 +16,8 @@ const (
 // csiAction decodes the key sequences that Bubble Tea does not know. Terminals
 // with the kitty keyboard protocol (kitty, WezTerm, Ghostty, iTerm2...) send
 // ctrl+shift+z as "ESC [ 122 ; 6 u", which arrives as an unknown-sequence
-// message. Here the ones that matter are turned into actions:
-// ctrl+shift+z redoes, ctrl+z undoes, ctrl+y redoes, ctrl+shift+c copies.
+// message. Here the ones that matter are turned into actions: ctrl+shift+z
+// undoes, ctrl+shift+y redoes, ctrl+shift+c copies.
 func csiAction(msg any) (string, bool) {
 	v := reflect.ValueOf(msg)
 	if v.Kind() != reflect.Slice || v.Type().Elem().Kind() != reflect.Uint8 ||
@@ -52,20 +52,16 @@ func parseCSIu(seq string) (string, bool) {
 	if !ctrl || alt {
 		return "", false
 	}
+	if !shift {
+		return "", false
+	}
 	switch code {
 	case 'z', 'Z':
-		if shift {
-			return csiRedo, true
-		}
 		return csiUndo, true
 	case 'y', 'Y':
-		if !shift {
-			return csiRedo, true
-		}
+		return csiRedo, true
 	case 'c', 'C':
-		if shift {
-			return csiCopy, true
-		}
+		return csiCopy, true
 	}
 	return "", false
 }

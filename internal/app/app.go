@@ -115,14 +115,7 @@ func (m Model) updateKey(keyMsg tea.KeyMsg) (Model, tea.Cmd, bool) {
 
 	// Only ctrl+c quits immediately: ctrl+q reaches the active screen, where
 	// in the editor it opens the save popup and in the list it is handled by the list.
-	// With text selected in the editor, ctrl+c copies it instead (the terminal
-	// keeps cmd+c / ctrl+shift+c for itself, so Nook never receives them).
 	if key == "ctrl+c" {
-		if m.screen == screenEditor && m.editor.mode == edEditing {
-			if m.hasSelection() {
-				return m.copySelection(), edToastTickCmd(), false
-			}
-		}
 		return m, nil, true
 	}
 

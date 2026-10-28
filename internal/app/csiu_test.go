@@ -10,11 +10,11 @@ func TestParseCSIu(t *testing.T) {
 		action string
 		ok     bool
 	}{
-		{"122;6u", csiRedo, true}, // ctrl+shift+z, as seen in a keys.log
-		{"122;5u", csiUndo, true}, // ctrl+z
-		{"121;5u", csiRedo, true}, // ctrl+y
+		{"122;6u", csiUndo, true}, // ctrl+shift+z, as seen in a keys.log
+		{"121;6u", csiRedo, true}, // ctrl+shift+y
 		{"99;6u", csiCopy, true},  // ctrl+shift+c
-		{"99;5u", "", false},      // plain ctrl+c is a normal key
+		{"122;5u", "", false},     // ctrl+z alone is not bound
+		{"99;5u", "", false},      // plain ctrl+c is a normal key (quit)
 		{"122;2u", "", false},     // shift+z only
 		{"122;7u", "", false},     // ctrl+alt+z
 		{"122u", "", false},

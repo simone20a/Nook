@@ -306,9 +306,10 @@ func TestPaletteLetterApplies(t *testing.T) {
 	}
 }
 
-// TestCtrlCCopiesSelection checks that ctrl+c copies the selected text in the
-// editor instead of quitting, and that it quits when nothing is selected.
-func TestCtrlCCopiesSelection(t *testing.T) {
+// TestCopyActionCopiesSelection checks that the copy action (ctrl+shift+c in
+// terminals that report it) copies the selected text of the editor without
+// quitting, and does nothing when nothing is selected.
+func TestCopyActionCopiesSelection(t *testing.T) {
 	const w, h = 80, 24
 	var copied string
 	old := copyText
@@ -319,17 +320,46 @@ func TestCtrlCCopiesSelection(t *testing.T) {
 	m := Model{width: w, height: h, screen: screenEditor}
 	m.editor = editorScreen{ed: ed, mode: edEditing, width: w, height: h}
 
-	m2, _, quit := m.updateKey(tea.KeyMsg{Type: tea.KeyCtrlC})
-	if quit {
-		t.Fatal("quit = true with a selection, want false (copy)")
-	}
+	model, _ := m.applyCSIAction(csiCopy)
 	if copied != "line" {
 		t.Fatalf("copied = %q, want %q", copied, "line")
 	}
-
-	m.editor.ed = editor.New([]string{"a test line"}, contentW(w), edHeight(contentH(h)))
-	if _, _, quit := m.updateKey(tea.KeyMsg{Type: tea.KeyCtrlC}); !quit {
-		t.Fatal("quit = false without a selection, want true")
+	if got := model.(Model).editor.toast; got != "copied" {
+		t.Errorf("toast = %q, want %q", got, "copied")
 	}
-	_ = m2
+
+	copied = ""
+	m.editor.ed = editor.New([]string{"a test line"}, contentW(w), edHeight(contentH(h)))
+	m.applyCSIAction(csiCopy)
+	if copied != "" {
+		t.Errorf("copied %q with nothing selected", copied)
+	}
+}
+
+// TestCtrlCQuitsEvenWithSelection checks that ctrl+c always quits.
+func TestCtrlCQuitsEvenWithSelection(t *testing.T) {
+	const w, h = 80, 24
+	ed := editor.New([]string{"a test line"}, contentW(w), edHeight(contentH(h))).SelectWord()
+	m := Model{width: w, height: h, screen: screenEditor}
+	m.editor = editorScreen{ed: ed, mode: edEditing, width: w, height: h}
+
+	if _, _, quit := m.updateKey(tea.KeyMsg{Type: tea.KeyCtrlC}); !quit {
+		t.Fatal("quit = false, want true")
+	}
+}
+
+// TestUndoAction checks that the undo action takes back the last edit.
+func TestUndoAction(t *testing.T) {
+	const w, h = 80, 24
+	m := Model{width: w, height: h, screen: screenEditor}
+	m.editor = editorScreen{ed: editor.New([]string{"a"}, contentW(w), edHeight(contentH(h))), mode: edEditing, width: w, height: h}
+
+	m, _, _ = m.updateKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("b")})
+	if got := m.editor.ed.Lines()[0]; got != "ab" {
+		t.Fatalf("line = %q, want %q", got, "ab")
+	}
+	model, _ := m.applyCSIAction(csiUndo)
+	if got := model.(Model).editor.ed.Lines()[0]; got != "a" {
+		t.Fatalf("after undo line = %q, want %q", got, "a")
+	}
 }

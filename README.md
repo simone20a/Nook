@@ -99,7 +99,8 @@ as written, with no markdown applied.
 |---|---|
 | `ctrl+s` / `F2` | save (confirmation toast) |
 | `esc` / `ctrl+q` | back to the list; with unsaved changes opens the *Save / Discard / Cancel* popup |
-| `ctrl+c` | copy the selection; with nothing selected, quit immediately |
+| `ctrl+c` | quit immediately |
+| `ctrl+shift+c` | copy the selection (see below) |
 | `↑` `↓` `←` `→` | move |
 | `home` / `end` | start / end of line |
 | `ctrl+home` / `ctrl+end`, `ctrl+↑` / `ctrl+↓` | start / end of document |
@@ -110,7 +111,7 @@ as written, with no markdown applied.
 | `backspace` / `delete` / `enter` | delete / delete forward / new line |
 | `alt+backspace` | delete the previous word |
 | `ctrl+u` / `ctrl+k` | delete to start / end of line |
-| `ctrl+z` / `ctrl+y` | undo / redo (`ctrl+shift+z` also redoes in terminals that report it: kitty, WezTerm, Ghostty, iTerm2…) |
+| `ctrl+shift+z` / `ctrl+y` | undo / redo (`ctrl+shift+y` also redoes; see below) |
 
 In the *Save / Discard / Cancel* popup: `←`/`→` choose, `enter` confirms, `esc`
 returns to the editor.
@@ -123,10 +124,19 @@ it.
 Scrolling with the mouse wheel or a two-finger touchpad gesture moves the document
 under the Focus Line, which stays where it is.
 
-Copying: with text selected, `ctrl+c` copies it to the system clipboard (the
-terminal keeps `cmd+c` for itself, so Nook can't receive it; `ctrl+shift+c` copies too in terminals that report it).
-It uses the OSC 52 terminal sequence (iTerm2, kitty, WezTerm, Alacritty, Windows
-Terminal, tmux…) and, as a fallback, `pbcopy`, `clip`, `wl-copy`, `xclip` or `xsel`.
+Copying and undo: `ctrl+shift+c` copies the selected text to the system clipboard
+and `ctrl+shift+z` undoes the last change (a run of typing is a single step), while
+`ctrl+y` or `ctrl+shift+y` redoes it. `ctrl+c` and `ctrl+z` are not used for these:
+`ctrl+c` always quits.
+
+A terminal only passes `ctrl+shift+letter` to the program in some cases: it has to
+report it (terminals with the kitty keyboard protocol such as kitty, WezTerm,
+Ghostty or iTerm2 do) and it must not use the combination itself. `ctrl+shift+c`
+is the "copy" shortcut of many terminals (kitty, WezTerm, Alacritty, GNOME
+Terminal, Windows Terminal), which keep it for themselves: unbind it in the
+terminal's settings. Run `NOOK_DEBUG_KEYS=1 ./nook` and check `~/.nook/keys.log` to see
+what your terminal sends. Copying uses the OSC 52 terminal sequence and, as a
+fallback, `pbcopy`, `clip`, `wl-copy`, `xclip` or `xsel`.
 
 Mouse: nothing moves while the button is held. A click makes the clicked line the
 Focus Line when you release the button (the column is mapped onto the raw text
