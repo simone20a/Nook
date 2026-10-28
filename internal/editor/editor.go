@@ -33,6 +33,12 @@ type Editor struct {
 	// of the selection) is on another line. Any key, click or scroll ends it.
 	frozen   bool
 	viewLine int
+
+	// History of changes for undo and redo; lastEdit and lastEditLine say what
+	// the previous change was, to merge runs of typing.
+	undo, redo   []snapshot
+	lastEdit     string
+	lastEditLine int
 }
 
 // runeLen counts the runes of a string.

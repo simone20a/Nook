@@ -25,11 +25,28 @@ import (
 //     and "ctrl+k" (from the cursor to the end of the line).
 //   - text: all the runes of key.Runes (space, IME, paste); a multi-line
 //     paste splits the line on '\n'.
+//   - history: "ctrl+z" undoes and "ctrl+y" redoes (a terminal sends
+//     ctrl+shift+z as plain ctrl+z, so the two cannot be told apart).
 func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	key, ok := msg.(tea.KeyMsg)
 	if !ok {
 		return e, nil
 	}
+
+	// Undo and redo; the changes made by every other key are recorded.
+	switch key.String() {
+	case "ctrl+z":
+		return e.Undo(), nil
+	case "ctrl+y":
+		return e.Redo(), nil
+	}
+	before := e.snapshot()
+	m, cmd := e.update(key)
+	return m.(Editor).commit(before, editKind(key)), cmd
+}
+
+// update handles a key; Update wraps it to keep the undo history.
+func (e Editor) update(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 	s := key.String()
 
 	// Any key ends a frozen view (see DragSelection).
@@ -176,7 +193,8 @@ func (e Editor) applyFormatKey(s string) Editor {
 // It is the entry point of the formatting palette (ctrl+t), which chooses the
 // letter and passes it here; an unexpected letter leaves the editor unchanged.
 func (e Editor) ApplyFormat(letter string) Editor {
-	return e.applyFormatKey(letter)
+	before := e.snapshot()
+	return e.applyFormatKey(letter).commit(before, "")
 }
 
 // withSelection performs a movement keeping the selection active:

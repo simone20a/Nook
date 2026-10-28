@@ -110,6 +110,7 @@ as written, with no markdown applied.
 | `backspace` / `delete` / `enter` | delete / delete forward / new line |
 | `alt+backspace` | delete the previous word |
 | `ctrl+u` / `ctrl+k` | delete to start / end of line |
+| `ctrl+z` / `ctrl+y` | undo / redo (a terminal sends `ctrl+shift+z` as plain `ctrl+z`) |
 
 In the *Save / Discard / Cancel* popup: `←`/`→` choose, `enter` confirms, `esc`
 returns to the editor.
@@ -123,7 +124,7 @@ Scrolling with the mouse wheel or a two-finger touchpad gesture moves the docume
 under the Focus Line, which stays where it is.
 
 Copying: with text selected, `ctrl+c` copies it to the system clipboard (the
-terminal keeps `cmd+c` / `ctrl+shift+c` for itself, so Nook can't receive them).
+terminal keeps `cmd+c` for itself, so Nook can't receive it; `ctrl+shift+c` works because a terminal sends it as plain `ctrl+c`).
 It uses the OSC 52 terminal sequence (iTerm2, kitty, WezTerm, Alacritty, Windows
 Terminal, tmux…) and, as a fallback, `pbcopy`, `clip`, `wl-copy`, `xclip` or `xsel`.
 

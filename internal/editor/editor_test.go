@@ -338,3 +338,59 @@ func TestDragSelectionKeepsFocusLine(t *testing.T) {
 		t.Fatalf("after a key the Focus Line shows line %d (ok=%v), want 4 (the cursor)", got, ok)
 	}
 }
+
+// TestUndoRedo checks that ctrl+z undoes a run of typing in one step and
+// ctrl+y redoes it, and that a cursor movement starts a new step.
+func TestUndoRedo(t *testing.T) {
+	typ := func(e Editor, s string) Editor {
+		for _, r := range s {
+			e = press(e, tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune{r}})
+		}
+		return e
+	}
+	e := typ(New([]string{""}, 20, 5), "abc")
+	if got := e.Lines()[0]; got != "abc" {
+		t.Fatalf("line = %q, want %q", got, "abc")
+	}
+
+	e = press(e, tea.KeyMsg{Type: tea.KeyCtrlZ})
+	if got := e.Lines()[0]; got != "" {
+		t.Fatalf("after undo line = %q, want empty (typing is one step)", got)
+	}
+	e = press(e, tea.KeyMsg{Type: tea.KeyCtrlY})
+	if got := e.Lines()[0]; got != "abc" {
+		t.Fatalf("after redo line = %q, want %q", got, "abc")
+	}
+
+	// A movement ends the run: "x" inserted after moving is its own step.
+	e = press(e, tea.KeyMsg{Type: tea.KeyLeft})
+	e = typ(e, "x")
+	if got := e.Lines()[0]; got != "abxc" {
+		t.Fatalf("line = %q, want %q", got, "abxc")
+	}
+	e = press(e, tea.KeyMsg{Type: tea.KeyCtrlZ})
+	if got := e.Lines()[0]; got != "abc" {
+		t.Fatalf("after undo line = %q, want %q", got, "abc")
+	}
+	e = press(e, tea.KeyMsg{Type: tea.KeyCtrlZ})
+	if got := e.Lines()[0]; got != "" {
+		t.Fatalf("after second undo line = %q, want empty", got)
+	}
+	// Nothing left to undo: no change, no panic.
+	e = press(e, tea.KeyMsg{Type: tea.KeyCtrlZ})
+	if got := e.Lines()[0]; got != "" {
+		t.Fatalf("extra undo changed the line to %q", got)
+	}
+}
+
+// TestUndoFormat checks that a formatting action is one undoable step.
+func TestUndoFormat(t *testing.T) {
+	e := New([]string{"a"}, 10, 5).ApplyFormat("b")
+	if got := e.Lines()[0]; got != "a****" {
+		t.Fatalf("line = %q, want %q", got, "a****")
+	}
+	e = press(e, tea.KeyMsg{Type: tea.KeyCtrlZ})
+	if got := e.Lines()[0]; got != "a" {
+		t.Fatalf("after undo line = %q, want %q", got, "a")
+	}
+}
