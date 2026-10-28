@@ -54,8 +54,7 @@ func (e Editor) renderRow(r int) string {
 		return ""
 	}
 	raw := e.lines[idx]
-	inside := isInsideFence(e.lines, idx)
-	segs := markdown.RenderLine(raw, inside)
+	segs, inside := e.segmentsFor(idx)
 
 	// A heading is highlighted: its background colours the text and a few
 	// spaces after it, and the inline styles inside it keep the background.

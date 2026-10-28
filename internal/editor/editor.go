@@ -177,7 +177,8 @@ func (e Editor) LineSegments(idx int) []markdown.Segment {
 	if idx < 0 || idx >= len(e.lines) {
 		return nil
 	}
-	return markdown.RenderLine(e.lines[idx], isInsideFence(e.lines, idx))
+	segs, _ := e.segmentsFor(idx)
+	return segs
 }
 
 // SetCursor moves the cursor to the given (line, column) position, with line
@@ -468,4 +469,16 @@ func (e Editor) SelectLine() Editor {
 	e.cursorCol = runeLen(e.currentLine())
 	e.ensureCursorVisible()
 	return e
+}
+
+// segmentsFor renders line idx, taking into account the block it belongs to
+// (code block or table). It also reports whether the line is inside a fence.
+func (e Editor) segmentsFor(idx int) ([]markdown.Segment, bool) {
+	inside := isInsideFence(e.lines, idx)
+	if !inside {
+		if t, ok := markdown.FindTable(e.lines, idx); ok {
+			return markdown.RenderTableLine(e.lines, t, idx), false
+		}
+	}
+	return markdown.RenderLine(e.lines[idx], inside), inside
 }

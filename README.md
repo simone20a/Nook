@@ -95,6 +95,11 @@ code blocks (```` ``` ```` or `~~~`) as a shaded panel closed by a top edge that
 the language (`┌─ go ────`) and a bottom edge (`└────`); the code inside is shown
 as written, with no markdown applied.
 
+Tables (a header row, a `|---|:-:|--:|` separator row and the rows below) are drawn
+with `│` borders, a `├─┼─┤` rule under the header and every column padded to its
+widest cell, honouring the `:` alignment marks; inline styles work inside cells.
+The Focus Line of a table row still shows the raw text.
+
 | Key | Action |
 |---|---|
 | `ctrl+s` / `F2` | save (confirmation toast) |

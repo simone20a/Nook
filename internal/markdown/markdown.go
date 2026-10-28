@@ -38,6 +38,10 @@ const (
 	StyleQuoteBar
 	// StyleRule is a horizontal rule (---, ***, ___).
 	StyleRule
+	// StyleTableBorder is a border of a table (│, ├─┼─┤).
+	StyleTableBorder
+	// StyleTableHead is the text of the header row of a table.
+	StyleTableHead
 )
 
 // Segment is a portion of a line with its style.
