@@ -110,7 +110,7 @@ as written, with no markdown applied.
 | `backspace` / `delete` / `enter` | delete / delete forward / new line |
 | `alt+backspace` | delete the previous word |
 | `ctrl+u` / `ctrl+k` | delete to start / end of line |
-| `ctrl+z` / `ctrl+y` | undo / redo (a terminal sends `ctrl+shift+z` as plain `ctrl+z`) |
+| `ctrl+z` / `ctrl+y` | undo / redo (`ctrl+shift+z` also redoes in terminals that report it: kitty, WezTerm, Ghostty, iTerm2…) |
 
 In the *Save / Discard / Cancel* popup: `←`/`→` choose, `enter` confirms, `esc`
 returns to the editor.
@@ -124,16 +124,17 @@ Scrolling with the mouse wheel or a two-finger touchpad gesture moves the docume
 under the Focus Line, which stays where it is.
 
 Copying: with text selected, `ctrl+c` copies it to the system clipboard (the
-terminal keeps `cmd+c` for itself, so Nook can't receive it; `ctrl+shift+c` works because a terminal sends it as plain `ctrl+c`).
+terminal keeps `cmd+c` for itself, so Nook can't receive it; `ctrl+shift+c` copies too in terminals that report it).
 It uses the OSC 52 terminal sequence (iTerm2, kitty, WezTerm, Alacritty, Windows
 Terminal, tmux…) and, as a fallback, `pbcopy`, `clip`, `wl-copy`, `xclip` or `xsel`.
 
-Mouse: a click makes the clicked line the Focus Line (the column is mapped onto
-the raw text through the markdown segments), a double click selects the word, a
-triple click the line; holding the left button and dragging extends the
-selection while the Focus Line stays still (it moves to the end of the
-selection with the next key). With the mouse enabled, native terminal selection is done by holding
-`Shift` (or from the terminal's menu).
+Mouse: nothing moves while the button is held. A click makes the clicked line the
+Focus Line when you release the button (the column is mapped onto the raw text
+through the markdown segments); a double click selects the word, a triple click
+the line. Holding the left button and dragging only extends the selection from
+the point you pressed: the Focus Line stays where it was, also after the release,
+and moves to the end of the selection with the next key. With the mouse enabled,
+native terminal selection is done by holding `Shift` (or from the terminal's menu).
 
 ## Formatting
 

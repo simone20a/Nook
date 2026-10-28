@@ -312,7 +312,7 @@ func TestCtrlCCopiesSelection(t *testing.T) {
 	const w, h = 80, 24
 	var copied string
 	old := copyText
-	copyText = func(s string) { copied = s }
+	copyText = func(s string) error { copied = s; return nil }
 	t.Cleanup(func() { copyText = old })
 
 	ed := editor.New([]string{"a test line"}, contentW(w), edHeight(contentH(h))).SelectWord()

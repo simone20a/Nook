@@ -75,6 +75,9 @@ func (m Model) Init() tea.Cmd { return m.titleCmd() }
 // propagated to the active screen, which turns it into the command that concerns it.
 func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	logMsg(msg)
+	if action, ok := csiAction(msg); ok {
+		return m.applyCSIAction(action)
+	}
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
 		m.width, m.height = msg.Width, msg.Height
@@ -116,10 +119,8 @@ func (m Model) updateKey(keyMsg tea.KeyMsg) (Model, tea.Cmd, bool) {
 	// keeps cmd+c / ctrl+shift+c for itself, so Nook never receives them).
 	if key == "ctrl+c" {
 		if m.screen == screenEditor && m.editor.mode == edEditing {
-			if text, ok := m.editor.ed.SelectedText(); ok && text != "" {
-				copyText(text)
-				m.editor = m.editor.edShowToast("copied")
-				return m, edToastTickCmd(), false
+			if m.hasSelection() {
+				return m.copySelection(), edToastTickCmd(), false
 			}
 		}
 		return m, nil, true
@@ -146,6 +147,47 @@ func (m Model) updateKey(keyMsg tea.KeyMsg) (Model, tea.Cmd, bool) {
 		m.screen = screenList
 	}
 	return m, cmd, false
+}
+
+// hasSelection reports whether the editor is open and has text selected.
+func (m Model) hasSelection() bool {
+	if m.screen != screenEditor || m.editor.mode != edEditing {
+		return false
+	}
+	text, ok := m.editor.ed.SelectedText()
+	return ok && text != ""
+}
+
+// copySelection copies the selected text of the editor to the clipboard and
+// tells the result with a toast.
+func (m Model) copySelection() Model {
+	text, _ := m.editor.ed.SelectedText()
+	if err := copyText(text); err != nil {
+		m.editor = m.editor.edShowToast("error: copy failed: " + err.Error())
+		return m
+	}
+	m.editor = m.editor.edShowToast("copied")
+	return m
+}
+
+// applyCSIAction performs an action decoded from a "CSI u" key sequence (see
+// csiAction). They only act in the editor, and never quit.
+func (m Model) applyCSIAction(action string) (tea.Model, tea.Cmd) {
+	if m.screen != screenEditor || m.editor.mode != edEditing {
+		return m, nil
+	}
+	switch action {
+	case csiUndo:
+		m.editor.ed = m.editor.ed.Undo()
+	case csiRedo:
+		m.editor.ed = m.editor.ed.Redo()
+	case csiCopy:
+		if !m.hasSelection() {
+			return m, nil
+		}
+		return m.copySelection(), tea.Batch(edToastTickCmd(), m.titleCmd())
+	}
+	return m, m.titleCmd()
 }
 
 // applyListAction performs the action that the list requested from the root model:

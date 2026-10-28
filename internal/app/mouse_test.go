@@ -27,15 +27,19 @@ func newDragTestScreen(t *testing.T) editorScreen {
 	return newEditorScreen(st, note, 60, 12)
 }
 
+// focusY is the screen row of the Focus Line in newDragTestScreen: one row of
+// margin plus the middle row of the text.
+const focusY = 4
+
 // TestMouseDragSelects checks that pressing the left button and dragging
 // selects the text between the pressed point and the cell reached, and that
 // releasing leaves the selection active.
 func TestMouseDragSelects(t *testing.T) {
 	s := newDragTestScreen(t)
 
-	// Press on the Focus Line (screen row 5 is the central row), then
+	// Press on the Focus Line (screen row focusY is the central row), then
 	// drag one row lower and a few columns to the right.
-	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionPress, Button: tea.MouseButtonLeft, X: 6, Y: 5})
+	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionPress, Button: tea.MouseButtonLeft, X: 6, Y: focusY})
 	if !s.dragging {
 		t.Fatal("dragging = false after the press, want true")
 	}
@@ -43,7 +47,7 @@ func TestMouseDragSelects(t *testing.T) {
 		t.Fatal("a simple press has already selected some text")
 	}
 
-	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionMotion, Button: tea.MouseButtonLeft, X: 10, Y: 6})
+	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionMotion, Button: tea.MouseButtonLeft, X: 10, Y: focusY + 1})
 	sel, ok := s.ed.SelectedText()
 	if !ok {
 		t.Fatal("after the drag there is no selection")
@@ -52,7 +56,7 @@ func TestMouseDragSelects(t *testing.T) {
 		t.Errorf("selected text = %q, want from the pressed point through the second line", sel)
 	}
 
-	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionRelease, Button: tea.MouseButtonLeft, X: 10, Y: 6})
+	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionRelease, Button: tea.MouseButtonLeft, X: 10, Y: focusY + 1})
 	if s.dragging {
 		t.Error("dragging = true after the release, want false")
 	}
@@ -66,7 +70,7 @@ func TestMouseDragSelects(t *testing.T) {
 func TestMouseMotionWithoutPressIgnored(t *testing.T) {
 	s := newDragTestScreen(t)
 
-	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionMotion, Button: tea.MouseButtonLeft, X: 10, Y: 6})
+	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionMotion, Button: tea.MouseButtonLeft, X: 10, Y: focusY + 1})
 	if _, ok := s.ed.SelectedText(); ok {
 		t.Error("a movement without a press selected some text")
 	}
@@ -77,15 +81,17 @@ func TestMouseMotionWithoutPressIgnored(t *testing.T) {
 func TestMouseClickClearsSelection(t *testing.T) {
 	s := newDragTestScreen(t)
 
-	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionPress, Button: tea.MouseButtonLeft, X: 4, Y: 5})
-	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionMotion, Button: tea.MouseButtonLeft, X: 12, Y: 5})
+	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionPress, Button: tea.MouseButtonLeft, X: 4, Y: focusY})
+	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionMotion, Button: tea.MouseButtonLeft, X: 12, Y: focusY})
 	if _, ok := s.ed.SelectedText(); !ok {
 		t.Fatal("the drag selected nothing")
 	}
-	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionRelease, Button: tea.MouseButtonLeft, X: 12, Y: 5})
+	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionRelease, Button: tea.MouseButtonLeft, X: 12, Y: focusY})
 
-	// Click on a different point: the selection disappears and only the cursor remains.
-	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionPress, Button: tea.MouseButtonLeft, X: 2, Y: 5})
+	// Click on a different point: the selection disappears (when the button
+	// is released) and only the cursor remains.
+	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionPress, Button: tea.MouseButtonLeft, X: 2, Y: focusY})
+	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionRelease, Button: tea.MouseButtonLeft, X: 2, Y: focusY})
 	if _, ok := s.ed.SelectedText(); ok {
 		t.Error("the click did not clear the previous selection")
 	}
@@ -96,8 +102,9 @@ func TestMouseClickClearsSelection(t *testing.T) {
 func TestDoubleClickSelectsWord(t *testing.T) {
 	s := newDragTestScreen(t)
 
-	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionPress, Button: tea.MouseButtonLeft, X: 7, Y: 5})
-	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionPress, Button: tea.MouseButtonLeft, X: 7, Y: 5})
+	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionPress, Button: tea.MouseButtonLeft, X: 7, Y: focusY})
+	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionRelease, Button: tea.MouseButtonLeft, X: 7, Y: focusY})
+	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionPress, Button: tea.MouseButtonLeft, X: 7, Y: focusY})
 	if s.dragging {
 		t.Error("dragging = true after the double click, want false")
 	}
@@ -115,7 +122,7 @@ func TestDoubleClickSelectsWord(t *testing.T) {
 func TestMouseWheelScrollsDocument(t *testing.T) {
 	s := newDragTestScreen(t)
 	wheel := func(b tea.MouseButton) {
-		s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionPress, Button: b, X: 6, Y: 5})
+		s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionPress, Button: b, X: 6, Y: focusY})
 	}
 
 	wheel(tea.MouseButtonWheelDown)
@@ -130,5 +137,45 @@ func TestMouseWheelScrollsDocument(t *testing.T) {
 	wheel(tea.MouseButtonWheelUp)
 	if got := s.ed.CursorRow(); got != 2 {
 		t.Fatalf("CursorRow after wheel up = %d, want 2", got)
+	}
+}
+
+// TestFocusLineMovesOnRelease checks that pressing on another line does not move
+// the Focus Line, that a release without movement does, and that a drag keeps
+// the Focus Line where it was, even after the release.
+func TestFocusLineMovesOnRelease(t *testing.T) {
+	s := newDragTestScreen(t)
+	focusLine := func() int {
+		line, _ := s.ed.LineAtRow(s.ed.FocusRow())
+		return line
+	}
+	if got := focusLine(); got != 0 {
+		t.Fatalf("initial Focus Line = %d, want 0", got)
+	}
+
+	// Press two rows below the Focus Line: nothing moves yet.
+	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionPress, Button: tea.MouseButtonLeft, X: 3, Y: focusY + 2})
+	if got := focusLine(); got != 0 {
+		t.Fatalf("Focus Line after the press = %d, want 0 (it moves on release)", got)
+	}
+	// Release without moving: the Focus Line goes to the clicked line.
+	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionRelease, Button: tea.MouseButtonLeft, X: 3, Y: focusY + 2})
+	if got := focusLine(); got != 2 {
+		t.Fatalf("Focus Line after the click = %d, want 2", got)
+	}
+
+	// Drag from the Focus Line to the row above: the selection exists, the
+	// Focus Line stays on line 2 also after the release.
+	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionPress, Button: tea.MouseButtonLeft, X: 6, Y: focusY})
+	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionMotion, Button: tea.MouseButtonLeft, X: 6, Y: focusY - 1})
+	if _, ok := s.ed.SelectedText(); !ok {
+		t.Fatal("the drag selected nothing")
+	}
+	s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionRelease, Button: tea.MouseButtonLeft, X: 6, Y: focusY - 1})
+	if got := focusLine(); got != 2 {
+		t.Fatalf("Focus Line after the drag = %d, want 2 (it must not move)", got)
+	}
+	if _, ok := s.ed.SelectedText(); !ok {
+		t.Error("the selection disappeared on release")
 	}
 }

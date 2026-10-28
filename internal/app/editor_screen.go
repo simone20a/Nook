@@ -41,9 +41,10 @@ type editorScreen struct {
 	// paletteChoice is the current entry of the formatting palette.
 	paletteChoice int
 	// Mouse dragging: anchor of the selection and state of the gesture.
-	dragLine int
-	dragCol  int
-	dragging bool
+	dragLine  int
+	dragCol   int
+	dragging  bool
+	dragMoved bool // the mouse moved while the button was held: it is a selection, not a click
 }
 
 // newEditorScreen creates the editor screen for the given note.
@@ -320,12 +321,17 @@ func (s editorScreen) edUpdateMouse(m tea.MouseMsg) (editorScreen, tea.Cmd) {
 		return s, nil
 	}
 
-	// Dragging: between the press and the release of the left button the
-	// mouse movements extend the selection from the anchor set at the click
-	// to the cell reached.
+	// Dragging: the press only records where the gesture starts; nothing moves
+	// while the button is held. Moving the mouse extends the selection from the
+	// press point to the cell reached, with the view still. On release a plain
+	// click (no movement) moves the Focus Line there, while after a drag the
+	// selection stays and the Focus Line does not move.
 	switch m.Action {
 	case tea.MouseActionRelease:
-		s.dragging = false
+		if s.dragging && !s.dragMoved {
+			s.ed = s.ed.SetCursor(s.dragLine, s.dragCol)
+		}
+		s.dragging, s.dragMoved = false, false
 		return s, nil
 	case tea.MouseActionMotion:
 		if !s.dragging {
@@ -336,6 +342,7 @@ func (s editorScreen) edUpdateMouse(m tea.MouseMsg) (editorScreen, tea.Cmd) {
 			return s, nil
 		}
 		s.ed = s.ed.DragSelection(s.dragLine, s.dragCol, line, s.edHitCol(line, cell, focus))
+		s.dragMoved = true
 		return s, nil
 	}
 
@@ -352,12 +359,10 @@ func (s editorScreen) edUpdateMouse(m tea.MouseMsg) (editorScreen, tea.Cmd) {
 		if !ok {
 			return s, nil
 		}
-		col := s.edHitCol(line, cell, focus)
-		s.ed = s.ed.SetCursor(line, col)
-		// The click sets the anchor of a possible drag selection:
-		// mouse movements with the button pressed extend it from here.
-		s.dragLine, s.dragCol = line, col
-		s.dragging = true
+		// The press sets the anchor of a possible drag selection, but does
+		// not move anything: the release decides (see above).
+		s.dragLine, s.dragCol = line, s.edHitCol(line, cell, focus)
+		s.dragging, s.dragMoved = true, false
 	case 2:
 		s.ed = s.ed.SelectWord()
 		s.dragging = false
