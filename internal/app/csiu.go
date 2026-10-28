@@ -17,7 +17,8 @@ const (
 // with the kitty keyboard protocol (kitty, WezTerm, Ghostty, iTerm2...) send
 // ctrl+shift+z as "ESC [ 122 ; 6 u", which arrives as an unknown-sequence
 // message. Here the ones that matter are turned into actions: ctrl+shift+z
-// undoes, ctrl+shift+y redoes, ctrl+shift+c copies.
+// undoes, ctrl+shift+c and ctrl+shift+y copy (the first one is often kept by
+// the terminal for its own copy, the second is free).
 func csiAction(msg any) (string, bool) {
 	v := reflect.ValueOf(msg)
 	if v.Kind() != reflect.Slice || v.Type().Elem().Kind() != reflect.Uint8 ||
@@ -58,9 +59,7 @@ func parseCSIu(seq string) (string, bool) {
 	switch code {
 	case 'z', 'Z':
 		return csiUndo, true
-	case 'y', 'Y':
-		return csiRedo, true
-	case 'c', 'C':
+	case 'c', 'C', 'y', 'Y':
 		return csiCopy, true
 	}
 	return "", false

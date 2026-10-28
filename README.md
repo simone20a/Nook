@@ -100,7 +100,7 @@ as written, with no markdown applied.
 | `ctrl+s` / `F2` | save (confirmation toast) |
 | `esc` / `ctrl+q` | back to the list; with unsaved changes opens the *Save / Discard / Cancel* popup |
 | `ctrl+c` | quit immediately |
-| `ctrl+shift+c` | copy the selection (see below) |
+| `ctrl+shift+c` / `ctrl+shift+y` | copy the selection (see below) |
 | `↑` `↓` `←` `→` | move |
 | `home` / `end` | start / end of line |
 | `ctrl+home` / `ctrl+end`, `ctrl+↑` / `ctrl+↓` | start / end of document |
@@ -111,7 +111,7 @@ as written, with no markdown applied.
 | `backspace` / `delete` / `enter` | delete / delete forward / new line |
 | `alt+backspace` | delete the previous word |
 | `ctrl+u` / `ctrl+k` | delete to start / end of line |
-| `ctrl+shift+z` / `ctrl+y` | undo / redo (`ctrl+shift+y` also redoes; see below) |
+| `ctrl+shift+z` / `ctrl+y` | undo / redo (see below) |
 
 In the *Save / Discard / Cancel* popup: `←`/`→` choose, `enter` confirms, `esc`
 returns to the editor.
@@ -124,9 +124,10 @@ it.
 Scrolling with the mouse wheel or a two-finger touchpad gesture moves the document
 under the Focus Line, which stays where it is.
 
-Copying and undo: `ctrl+shift+c` copies the selected text to the system clipboard
-and `ctrl+shift+z` undoes the last change (a run of typing is a single step), while
-`ctrl+y` or `ctrl+shift+y` redoes it. `ctrl+c` and `ctrl+z` are not used for these:
+Copying and undo: `ctrl+shift+c` (or `ctrl+shift+y`, which terminals rarely use
+for themselves) copies the selected text to the system clipboard and
+`ctrl+shift+z` undoes the last change (a run of typing is a single step), while
+`ctrl+y` redoes it. `ctrl+c` and `ctrl+z` are not used for these:
 `ctrl+c` always quits.
 
 A terminal only passes `ctrl+shift+letter` to the program in some cases: it has to

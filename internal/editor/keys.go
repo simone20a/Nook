@@ -25,9 +25,9 @@ import (
 //     and "ctrl+k" (from the cursor to the end of the line).
 //   - text: all the runes of key.Runes (space, IME, paste); a multi-line
 //     paste splits the line on '\n'.
-//   - history: "ctrl+y" redoes. Undo (ctrl+shift+z) and redo (ctrl+shift+y)
-//     arrive from some terminals as escape sequences that the application
-//     decodes, and call Undo and Redo directly.
+//   - history: "ctrl+y" redoes. Undo (ctrl+shift+z) arrives from some
+//     terminals as an escape sequence that the application decodes, and calls
+//     Undo directly.
 func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	key, ok := msg.(tea.KeyMsg)
 	if !ok {
