@@ -33,6 +33,9 @@ func (e Editor) Footer() string {
 	if e.width <= 0 {
 		return ""
 	}
+	if e.vim {
+		return e.vimFooter()
+	}
 	plain := truncate(edFooterHint, e.width)
 	pad := e.width - ansi.StringWidth(plain)
 	if pad < 0 {

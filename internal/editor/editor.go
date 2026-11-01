@@ -39,6 +39,18 @@ type Editor struct {
 	undo, redo   []snapshot
 	lastEdit     string
 	lastEditLine int
+
+	// Vim mode (see vim.go): vim turns it on, the other fields are its state.
+	vim         bool
+	vimMode     vimMode
+	vimPending  string // operator or prefix waiting for the next key: d c y g r di ...
+	vimPreCount int    // count typed before the pending command, 0 = none
+	vimCount    int    // count being typed, 0 = none
+	vimCmdOn    bool   // the ":" command line is open
+	vimCmd      string // text typed on the ":" command line
+	vimMsg      string // message shown in the footer until the next key
+	vimReg      string // unnamed register: the last text yanked or deleted
+	vimRegLines bool   // the register holds whole lines
 }
 
 // runeLen counts the runes of a string.
@@ -207,6 +219,7 @@ func (e Editor) SetCursor(line, col int) Editor {
 	}
 	e.cursorCol = col
 	e.ensureCursorVisible()
+	e.vimSettle()
 	return e
 }
 
@@ -301,6 +314,7 @@ func (e Editor) Scroll(n int) Editor {
 	}
 	e.clampCol()
 	e.ensureCursorVisible()
+	e.vimSettle()
 	return e
 }
 
@@ -411,11 +425,18 @@ func (e *Editor) clearSelection() {
 }
 
 // selectedRange normalises anchor and cursor in ascending (line, column) order.
+// In vim's VISUAL modes it is the range they cover (see visualRange), so
+// highlighting, copying and formatting agree with the operators.
 func (e Editor) selectedRange() (sl, sc, el, ec int) {
 	if e.anchorLine < e.cursorLine || (e.anchorLine == e.cursorLine && e.anchorCol <= e.cursorCol) {
-		return e.anchorLine, e.anchorCol, e.cursorLine, e.cursorCol
+		sl, sc, el, ec = e.anchorLine, e.anchorCol, e.cursorLine, e.cursorCol
+	} else {
+		sl, sc, el, ec = e.cursorLine, e.cursorCol, e.anchorLine, e.anchorCol
 	}
-	return e.cursorLine, e.cursorCol, e.anchorLine, e.anchorCol
+	if e.inVisual() {
+		return e.visualRange(sl, sc, el, ec)
+	}
+	return sl, sc, el, ec
 }
 
 // isSelectWordRune says whether r is a word character for selection with the
@@ -440,6 +461,7 @@ func (e Editor) SelectWord() Editor {
 		} else {
 			e.clearSelection()
 			e.ensureCursorVisible()
+			e.vimSettle()
 			return e
 		}
 	}
@@ -455,6 +477,7 @@ func (e Editor) SelectWord() Editor {
 	e.anchorCol = start
 	e.selecting = true
 	e.cursorCol = end
+	e.vimMouseSelect(vimVisual)
 	e.ensureCursorVisible()
 	return e
 }
@@ -467,6 +490,7 @@ func (e Editor) SelectLine() Editor {
 	e.anchorCol = 0
 	e.selecting = true
 	e.cursorCol = runeLen(e.currentLine())
+	e.vimMouseSelect(vimVisualLine)
 	e.ensureCursorVisible()
 	return e
 }

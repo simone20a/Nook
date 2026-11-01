@@ -167,12 +167,92 @@ closes it without applying anything.
 With an active selection the action wraps the selected text; with no selection on
 the Focus Line you can also type markdown by hand, since the text there is raw.
 
+## Vim mode
+
+For people whose hands already know vim, the editor has an optional modal
+mode. It is off by default, because it changes what most keys do: without it
+Nook keeps the keys described above. Turn it on when you start Nook:
+
+```sh
+NOOK_VIM=1 ./nook
+```
+
+To keep it on, add `export NOOK_VIM=1` to your shell profile; any other value,
+or none, turns it off. Vim mode only changes the editor's keys: rendering, the
+Focus Line, the note list and saving work as usual.
+
+Notes open in **NORMAL** mode. The footer shows the mode (`-- NORMAL --`,
+`-- INSERT --`, `-- VISUAL --`, `-- V-LINE --`), the command being typed
+(`2d`) and its messages. `esc` goes back to NORMAL from any mode and never leaves
+the note: leave with `:q` or `ctrl+q`. `ctrl+c` works as `esc` while there is
+something to cancel (INSERT, VISUAL, a pending command, the command line) and
+quits Nook from NORMAL mode, as usual. `ctrl+s`, `ctrl+q`, `ctrl+t`, `ctrl+/`,
+`ctrl+shift+c`, `ctrl+shift+z` and `ctrl+y` keep working in every mode.
+
+| Key | Action |
+|---|---|
+| `i` / `a` | insert before / after the cursor |
+| `I` / `A` | insert at the first character / at the end of the line |
+| `o` / `O` | open a line below / above and insert |
+| `h` `j` `k` `l`, arrows | move |
+| `w` / `b` / `e` | next word / start of the word / end of the word |
+| `0` / `^` / `$` | start of the line / first character / end of the line |
+| `gg` / `G` | first / last line (`5G`: line 5) |
+| `ctrl+d` / `ctrl+u` | half a page down / up |
+| `x` / `X` | delete the character under / before the cursor |
+| `r` then a character | replace the character under the cursor |
+| `s` | delete the character and insert |
+| `D` / `C` | delete / change to the end of the line |
+| `J` | join the next line, with one space |
+| `p` / `P` | paste after / before the cursor (lines: below / above) |
+| `u` / `ctrl+r` | undo / redo |
+| `v` / `V` | select characters (VISUAL) / whole lines (V-LINE) |
+| `:` | command line |
+
+**Operators.** `d` deletes, `c` deletes and inserts, `y` copies. They take a
+motion (`dw`, `c$`, `y2j`, `dG`, `dgg`), a text object (`diw`, `ciw`, `yaw`:
+`iw` is the word under the cursor, `aw` the word with the blank after it) or are
+doubled for whole lines (`dd`, `cc`, `yy`). `Y` copies the line, like `yy`.
+
+**Counts** go before a command or a motion: `3j`, `5w`, `3x`, `2dd`, `d3w`;
+`2d3w` deletes six words.
+
+**VISUAL and V-LINE.** The motions extend the selection; `d` (or `x`), `c` and
+`y` act on it, `o` jumps to its other end, `esc` cancels and `ctrl+t` formats it.
+In NORMAL mode a selection made with the mouse (drag, double click, triple click)
+becomes a VISUAL or V-LINE one.
+
+| Command | Action |
+|---|---|
+| `:w` | save |
+| `:q` | back to the list (with unsaved changes, the *Save / Discard / Cancel* popup) |
+| `:wq` / `:x` | save and go back to the list; if saving fails you stay in the note |
+| `:q!` | back to the list, discarding the changes |
+| `:12` / `:$` | go to line 12 / to the last line |
+
+An unknown command shows a message in the footer and changes nothing.
+
+Some common edits: `ciw` + text + `esc` replaces a word; `ddp` swaps a line with
+the next one; `yyp` duplicates a line; `Vjjd` deletes three lines; `A` + text +
+`esc` + `:wq` adds to the end of a line, saves and closes the note.
+
+Undo works as in vim: an insert, from the command that starts it (`i`, `o`,
+`cw` …) to `esc`, is a single step. The register is Nook's own: `y`, `d` and `x`
+don't touch the system clipboard. Copy a selection there with `ctrl+shift+c`,
+and paste from it with your terminal's paste: pasted text is always inserted as
+text, also in NORMAL mode, and replaces a VISUAL selection.
+
+Vim mode covers the commands listed here and nothing else. Notably there is no
+`.` repeat, no search (`/`, `n`, `f`, `t`), no named registers, macros or marks,
+no `:s` or other `:` commands, and `j`/`k` don't remember the column across
+shorter lines. The insert commands (`i a I A o O`) and `D` `C` ignore counts.
+
 ## Help
 
 `ctrl+/` or `F1` opens the help popup on any screen; `?` also works from the list
 (where you are not typing text). The popup is organised in tabs — **List**,
-**Editor**, **Formatting**, **Mouse** and **General** — and opens on the one that
-matches the current screen. Use `←`/`→` (or `tab`, or `1`–`5`) to switch tab,
+**Editor**, **Formatting**, **Mouse**, **Vim** and **General** — and opens on the
+one that matches the current screen. Use `←`/`→` (or `tab`, or `1`–`6`) to switch tab,
 `↑`/`↓` to scroll, and `esc`, `q` or `F1` to close it.
 
 ## Key diagnostics

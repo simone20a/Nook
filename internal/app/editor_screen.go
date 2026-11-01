@@ -1,6 +1,7 @@
 package app
 
 import (
+	"os"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -57,8 +58,12 @@ func newEditorScreen(st *store.Store, note *store.Note, w, h int) editorScreen {
 	if len(lines) == 0 {
 		lines = []string{""}
 	}
+	ed := editor.New(lines, contentW(w), edHeight(contentH(h)))
+	if os.Getenv(vimEnv) == "1" {
+		ed = ed.WithVim()
+	}
 	return editorScreen{
-		ed:     editor.New(lines, contentW(w), edHeight(contentH(h))),
+		ed:     ed,
 		note:   n,
 		st:     st,
 		mode:   edEditing,
@@ -66,6 +71,10 @@ func newEditorScreen(st *store.Store, note *store.Note, w, h int) editorScreen {
 		height: h,
 	}
 }
+
+// vimEnv is the environment variable that turns on vim mode in the editor:
+// "1" activates it; any other value (or its absence) leaves the usual keys.
+const vimEnv = "NOOK_VIM"
 
 // edHeight is the height to give the text for a content height ch: the
 // content is ch rows high minus the footer one and the empty row above it,
@@ -192,10 +201,17 @@ func (s editorScreen) edUpdateKey(keyMsg tea.KeyMsg) (editorScreen, tea.Cmd) {
 
 	if s.ed.WantsSave {
 		s.ed.WantsSave = false
+		// :wq in vim mode asks to save and then exit.
+		exit := s.ed.WantsExit
+		s.ed.WantsExit = false
 		saved, saveCmd, ok := s.save()
 		if !ok {
 			// Error: save() has already set the toast; only its tick is needed.
 			return saved, saveCmd
+		}
+		if exit {
+			saved.action = edBackToList
+			return saved, cmd
 		}
 		// Save succeeded: "saved" toast with auto-hide, with the same
 		// mechanism (edShowToast + edToastTickCmd) used by the error.

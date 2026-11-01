@@ -28,6 +28,8 @@ import (
 //   - history: "ctrl+y" redoes. Undo (ctrl+shift+z) arrives from some
 //     terminals as an escape sequence that the application decodes, and calls
 //     Undo directly.
+//
+// With vim mode on, keys go to vimUpdate instead (see vim.go).
 func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	key, ok := msg.(tea.KeyMsg)
 	if !ok {
@@ -38,6 +40,9 @@ func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	// by every other key are recorded.
 	if key.String() == "ctrl+y" {
 		return e.Redo(), nil
+	}
+	if e.vim {
+		return e.vimUpdate(key), nil
 	}
 	before := e.snapshot()
 	m, cmd := e.update(key)
@@ -193,7 +198,13 @@ func (e Editor) applyFormatKey(s string) Editor {
 // letter and passes it here; an unexpected letter leaves the editor unchanged.
 func (e Editor) ApplyFormat(letter string) Editor {
 	before := e.snapshot()
-	return e.applyFormatKey(letter).commit(before, "")
+	e = e.applyFormatKey(letter).commit(before, "")
+	if e.inVisual() {
+		// In vim mode formatting ends VISUAL mode, as an operator does.
+		e.clearSelection()
+	}
+	e.vimSettle()
+	return e
 }
 
 // withSelection performs a movement keeping the selection active:
