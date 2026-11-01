@@ -5,10 +5,23 @@
 package theme
 
 import (
+	"os"
+
 	lipgloss "github.com/charmbracelet/lipgloss"
 
 	"nook/internal/markdown"
 )
+
+func init() {
+	// NOOK_THEME forces the palette to "light" or "dark" instead of
+	// detecting the terminal background. Any other value is ignored.
+	switch os.Getenv("NOOK_THEME") {
+	case "light":
+		lipgloss.SetHasDarkBackground(false)
+	case "dark":
+		lipgloss.SetHasDarkBackground(true)
+	}
+}
 
 // ac builds an adaptive colour: Light for light terminals, Dark for dark
 // ones.
@@ -64,23 +77,23 @@ var dimSpecs = map[markdown.Style]spec{
 	markdown.StyleHeading3:    {light: "22", dark: "157", bgLight: "157", bgDark: "29", bold: true},
 	markdown.StyleHeading4:    {light: "60", dark: "146", bgLight: "254", bgDark: "237", bold: true},
 	markdown.StyleHeading5:    {light: "60", dark: "146", bgLight: "254", bgDark: "237"},
-	markdown.StyleHeading6:    {light: "102", dark: "103", bgLight: "255", bgDark: "236"},
-	markdown.StyleBold:        {light: "60", dark: "103", bold: true},
+	markdown.StyleHeading6:    {light: "102", dark: "146", bgLight: "255", bgDark: "236"},
+	markdown.StyleBold:        {light: "60", dark: "146", bold: true},
 	markdown.StyleItalic:      {light: "65", dark: "108", italic: true},
 	markdown.StyleCode:        {light: "66", dark: "110", bgLight: "254", bgDark: "236"},
-	markdown.StyleStrike:      {light: "67", dark: "102", strike: true},
-	markdown.StyleLink:        {light: "68", dark: "59", underline: true},
-	markdown.StyleImage:       {light: "250", dark: "241", faint: true},
-	markdown.StyleQuote:       {light: "248", dark: "245", italic: true, faint: true},
-	markdown.StyleQuoteBar:    {light: "145", dark: "240", bold: true},
-	markdown.StyleBullet:      {light: "137", dark: "94", faint: true},
-	markdown.StyleCheckbox:    {light: "108", dark: "65", faint: true},
-	markdown.StyleFence:       {light: "250", dark: "241", faint: true},
-	markdown.StyleCodeBlock:   {light: "250", dark: "240", bgLight: "255", bgDark: "234", faint: true},
+	markdown.StyleStrike:      {light: "67", dark: "138", strike: true},
+	markdown.StyleLink:        {light: "68", dark: "74", underline: true},
+	markdown.StyleImage:       {light: "250", dark: "245"},
+	markdown.StyleQuote:       {light: "248", dark: "247", italic: true},
+	markdown.StyleQuoteBar:    {light: "145", dark: "243", bold: true},
+	markdown.StyleBullet:      {light: "137", dark: "137"},
+	markdown.StyleCheckbox:    {light: "108", dark: "107"},
+	markdown.StyleFence:       {light: "250", dark: "243"},
+	markdown.StyleCodeBlock:   {light: "250", dark: "246", bgLight: "255", bgDark: "234"},
 	markdown.StyleRule:        {light: "250", dark: "240", faint: true},
 	markdown.StyleTableBorder: {light: "250", dark: "240", faint: true},
-	markdown.StyleTableHead:   {light: "97", dark: "96", bold: true, faint: true},
-	markdown.StyleNone:        {light: "250", dark: "241", faint: true},
+	markdown.StyleTableHead:   {light: "97", dark: "139", bold: true},
+	markdown.StyleNone:        {light: "250", dark: "248"},
 }
 
 // Styles maps every markdown style to its full rendering.
@@ -136,7 +149,7 @@ var (
 	// Selected is the style of the selected row.
 	Selected = lipgloss.NewStyle().Bold(true)
 	// DimText is the style of dimmed text: the dimming is in the colour only.
-	DimText = lipgloss.NewStyle().Foreground(ac("250", "241"))
+	DimText = lipgloss.NewStyle().Foreground(ac("250", "245"))
 	// TrashDim is the style of unselected notes in the trash.
 	TrashDim = lipgloss.NewStyle().Foreground(ac("124", "88")).Faint(true)
 	// TrashSel is the style of the selected trash note.
