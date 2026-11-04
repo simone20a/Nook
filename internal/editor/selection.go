@@ -50,6 +50,7 @@ func (e Editor) SetSelection(anchorLine, anchorCol, line, col int) Editor {
 	e.cursorLine = clampLine(line, len(e.lines))
 	e.cursorCol = col
 	e.clampCol()
+	e.vimMouseSelect(vimVisual)
 	e.ensureCursorVisible()
 	return e
 }

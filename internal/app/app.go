@@ -113,6 +113,13 @@ func (m Model) updateKey(keyMsg tea.KeyMsg) (Model, tea.Cmd, bool) {
 		return m.openHelp(), nil, false
 	}
 
+	// In vim mode ctrl+c leaves INSERT or VISUAL mode and cancels a pending
+	// command, as in vim, instead of quitting with the note half edited; from
+	// NORMAL mode it quits as usual.
+	if key == "ctrl+c" && m.screen == screenEditor && m.editor.mode == edEditing && m.editor.ed.VimBusy() {
+		keyMsg, key = tea.KeyMsg{Type: tea.KeyEsc}, "esc"
+	}
+
 	// Only ctrl+c quits immediately: ctrl+q reaches the active screen, where
 	// in the editor it opens the save popup and in the list it is handled by the list.
 	if key == "ctrl+c" {

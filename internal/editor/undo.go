@@ -26,6 +26,7 @@ func (e *Editor) restore(s snapshot) {
 	e.Dirty = true
 	e.clampCol()
 	e.ensureCursorVisible()
+	e.vimSettle()
 }
 
 // sameLines reports whether two texts are identical.
