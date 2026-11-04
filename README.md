@@ -41,6 +41,14 @@ any other editor too. Deleted notes are not erased but moved to the hidden
 `~/.nook/.trash` folder, from where they can be restored. Only `.md` files and
 folders are shown, any other file in the folder is left alone.
 
+Nook picks the light or dark palette from your terminal's background. If the
+text is hard to read, force one with `NOOK_THEME`:
+
+```sh
+NOOK_THEME=dark ./nook    # dark palette, for a black background
+NOOK_THEME=light ./nook   # light palette, for a white background
+```
+
 ## Note list
 
 Entries sit in a card at most 60 columns wide, centred horizontally and vertically
