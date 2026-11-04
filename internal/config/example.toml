@@ -1,0 +1,18 @@
+# Nook configuration.
+#
+# Nook reads this file at start-up from ~/.config/Nook/config.toml (or from
+# $XDG_CONFIG_HOME/Nook/config.toml). Every setting is optional: the values
+# below are the defaults. Environment variables override the file:
+# NOOK_THEME, NOOK_VIM and NOOK_DIR.
+
+# Colour theme: "dark", "light", "auto" (dark or light, following the
+# terminal's background), or a custom theme: the name of a file in
+# ~/.config/Nook/themes/ (without .toml) or a path to a theme file.
+# Print a built-in theme to use it as a starting point:  nook theme dark
+theme = "dark"
+
+# Vim-style modal editing in the editor (NORMAL, INSERT, VISUAL).
+vim = false
+
+# Folder where the notes live. "~" is your home directory.
+# notes_dir = "~/.nook"

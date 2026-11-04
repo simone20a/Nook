@@ -1,0 +1,78 @@
+# Nook theme "light": for terminals with a light background.
+#
+# A style is a space-separated list of: fg=COLOUR  bg=COLOUR  bold  italic
+# strike  underline  faint. A COLOUR is an ANSI 256 index (0-255) or #rrggbb.
+# An empty string "" means "no styling".
+#
+# Copy this file to ~/.config/Nook/themes/ with another name, edit it and set
+# theme = "that-name" in ~/.config/Nook/config.toml. A theme may start from
+# another one and change only some styles: add base = "dark" (or "light")
+# and keep just the lines you want to override.
+
+name = "light"
+
+# Full-strength styles. Today only quote_bar is used (the bar next to a quote,
+# also on the Focus Line); the rest is kept in step with [dim].
+[full]
+heading1 = "fg=33 bold"
+heading2 = "fg=40 bold"
+heading3 = "fg=31 bold"
+heading4 = "fg=67"
+heading5 = "fg=97"
+heading6 = "fg=95"
+bold = "fg=55 bold"
+italic = "fg=29 italic"
+code = "fg=88 bg=253"
+strike = "fg=94 strike"
+link = "fg=25 underline"
+image = "faint"
+quote = "fg=250 italic"
+quote_bar = "fg=103 bold"
+bullet = "fg=208"
+checkbox = "fg=65"
+fence = "faint"
+code_block = "fg=248 bg=254"
+rule = "fg=250"
+table_border = "fg=250"
+table_head = "fg=55 bold"
+text = ""
+
+# The rendered markdown of every line that is not the Focus Line (the Focus
+# Line itself shows raw text). heading1..6 backgrounds highlight the titles.
+[dim]
+heading1 = "fg=17 bg=153 bold"
+heading2 = "fg=23 bg=159 bold"
+heading3 = "fg=22 bg=157 bold"
+heading4 = "fg=60 bg=254 bold"
+heading5 = "fg=60 bg=254"
+heading6 = "fg=102 bg=255"
+bold = "fg=60 bold"
+italic = "fg=65 italic"
+code = "fg=66 bg=254"
+strike = "fg=67 strike"
+link = "fg=68 underline"
+image = "fg=250"
+quote = "fg=248 italic"
+quote_bar = "fg=145 bold"
+bullet = "fg=137"
+checkbox = "fg=108"
+fence = "fg=250"
+code_block = "fg=250 bg=255"
+rule = "fg=250 faint"
+table_border = "fg=250 faint"
+table_head = "fg=97 bold"
+text = "fg=250"
+
+# Interface: toasts, the note list, the selection...
+[ui]
+error = "fg=124"
+toast = "fg=25 bold"
+toast_error = "fg=124 bold"
+banner = "fg=25 bold"
+selected = "bold"
+dim_text = "fg=250"
+trash_dim = "fg=124 faint"
+trash_sel = "fg=124 bold"
+folder_dim = "fg=103 bold"
+folder_sel = "fg=25 bold"
+selection = "fg=235 bg=223"

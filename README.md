@@ -35,19 +35,16 @@ With the `Makefile`: `make build`, `make run`, `make test`, `make vet`, `make fm
 ```
 
 On start-up the note list opens; from there you create, open, rename and trash
-notes. Everything lives in `~/.nook` (override with `NOOK_DIR`): every note is a
+notes. Everything lives in `~/.nook` (change it with `notes_dir` in the
+[configuration](#configuration), or `NOOK_DIR`): every note is a
 `<title>.md` file and every folder is a real directory, so you can edit them with
 any other editor too. Deleted notes are not erased but moved to the hidden
 `~/.nook/.trash` folder, from where they can be restored. Only `.md` files and
 folders are shown, any other file in the folder is left alone.
 
-Nook picks the light or dark palette from your terminal's background. If the
-text is hard to read, force one with `NOOK_THEME`:
-
-```sh
-NOOK_THEME=dark ./nook    # dark palette, for a black background
-NOOK_THEME=light ./nook   # light palette, for a white background
-```
+Nook uses its dark colour theme by default. Switch to the light one, follow the
+terminal's background, or write your own in the [configuration](#configuration)
+(`theme = "light"`), or for a single run with `NOOK_THEME=light ./nook`.
 
 ## Note list
 
@@ -179,14 +176,15 @@ the Focus Line you can also type markdown by hand, since the text there is raw.
 
 For people whose hands already know vim, the editor has an optional modal
 mode. It is off by default, because it changes what most keys do: without it
-Nook keeps the keys described above. Turn it on when you start Nook:
+Nook keeps the keys described above. Turn it on for good with `vim = true` in the
+[configuration](#configuration), or for a single run when you start Nook:
 
 ```sh
 NOOK_VIM=1 ./nook
 ```
 
-To keep it on, add `export NOOK_VIM=1` to your shell profile; any other value,
-or none, turns it off. Vim mode only changes the editor's keys: rendering, the
+`NOOK_VIM` wins over the file: `1` turns vim mode on, any other value turns it
+off. Vim mode only changes the editor's keys: rendering, the
 Focus Line, the note list and saving work as usual.
 
 Notes open in **NORMAL** mode. The footer shows the mode (`-- NORMAL --`,
@@ -254,6 +252,87 @@ Vim mode covers the commands listed here and nothing else. Notably there is no
 `.` repeat, no search (`/`, `n`, `f`, `t`), no named registers, macros or marks,
 no `:s` or other `:` commands, and `j`/`k` don't remember the column across
 shorter lines. The insert commands (`i a I A o O`) and `D` `C` ignore counts.
+
+## Configuration
+
+Nook works without any setup. To change its defaults, create the file
+`~/.config/Nook/config.toml` (or `$XDG_CONFIG_HOME/Nook/config.toml`). The
+quickest way is to let Nook write it for you, with every setting documented:
+
+```sh
+nook config init     # writes ~/.config/Nook/config.toml (never overwrites)
+nook config path     # prints where Nook looks for it
+```
+
+The file is a flat list of `key = value` lines; `#` starts a comment. Every
+setting is optional and these are the defaults:
+
+```toml
+theme = "dark"          # "dark", "light", "auto", or a custom theme (see below)
+vim = false             # vim-style modal editing in the editor
+# notes_dir = "~/.nook" # where the notes live
+```
+
+| Setting | Values | Environment override |
+|---|---|---|
+| `theme` | `"dark"` (default), `"light"`, `"auto"` (dark or light according to the terminal's background), or a custom theme | `NOOK_THEME` |
+| `vim` | `true` or `false` — see [Vim mode](#vim-mode) | `NOOK_VIM` (`1` on, anything else off) |
+| `notes_dir` | absolute path, or starting with `~/`; default `~/.nook` | `NOOK_DIR` |
+
+Environment variables win over the file, which is handy for a one-off:
+`NOOK_THEME=light nook`. `NOOK_CONFIG=/path/to/file.toml` makes Nook read another
+configuration file (its `themes/` folder is looked up next to it).
+
+A mistake in the file — an unknown setting, a value of the wrong kind, a missing
+theme — stops Nook at start-up with a message that names the file and the line,
+instead of silently ignoring it. Only this small subset of TOML is read: strings
+in `"..."` (or `'...'`), `true`/`false`, `#` comments and `[sections]` in theme files.
+
+### Themes
+
+Nook ships with two themes, `dark` (the default) and `light`. A theme is a small
+text file that gives a colour and some attributes to every kind of text. Print one
+to start from it:
+
+```sh
+mkdir -p ~/.config/Nook/themes
+nook theme dark > ~/.config/Nook/themes/ocean.toml
+```
+
+Edit `ocean.toml` and choose it in the configuration with `theme = "ocean"`. A
+theme name is looked up as `~/.config/Nook/themes/<name>.toml`; a value with a
+`/` or ending in `.toml` is a path (`~/` is your home directory, a relative path
+starts in `~/.config/Nook`). `dark` and `light` are reserved for the built-in ones;
+their files live in [`internal/themefile/themes`](internal/themefile/themes).
+
+A theme file looks like this (shortened):
+
+```toml
+name = "ocean"
+base = "dark"            # take everything not listed from the dark theme
+
+[dim]                    # rendered markdown of the lines out of focus
+heading1 = "fg=153 bg=#0b3d5c bold"
+link = "fg=74 underline"
+
+[ui]                     # interface: toasts, note list, selection...
+selection = "fg=232 bg=#f6c177"
+```
+
+A style is a string of space-separated words: `fg=COLOUR`, `bg=COLOUR`, `bold`,
+`italic`, `strike`, `underline` and `faint`; an empty string `""` means no
+styling. A `COLOUR` is an ANSI 256 index (`0`–`255`, works everywhere) or a
+`#rrggbb` hex value (needs a true-colour terminal). With `base`, a file lists only
+the styles it changes — the base is `dark` unless you write `base = "light"`.
+
+| Section | Keys |
+|---|---|
+| `[dim]` | the rendered markdown of every line that is not the Focus Line: `heading1`…`heading6`, `bold`, `italic`, `code`, `strike`, `link`, `image`, `quote`, `quote_bar`, `bullet`, `checkbox`, `fence`, `code_block`, `rule`, `table_border`, `table_head`, `text` |
+| `[full]` | the same keys at full strength; today only `quote_bar` (the bar beside a quote, also on the Focus Line) is drawn with it |
+| `[ui]` | `error`, `toast`, `toast_error`, `banner` (titles and accents), `selected`, `dim_text`, `trash_dim`, `trash_sel`, `folder_dim`, `folder_sel`, `selection` (selected text in the editor) |
+
+The Focus Line itself shows raw text and the cursor is always drawn in reverse
+video, so they are not themeable.
 
 ## Help
 

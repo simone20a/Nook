@@ -8,6 +8,7 @@ import (
 	"github.com/muesli/termenv"
 
 	"nook/internal/markdown"
+	"nook/internal/themefile"
 )
 
 // setTrueColorProfile forces an explicit colour profile on the lipgloss renderer: in
@@ -103,4 +104,63 @@ func TestQuoteItalicRendered(t *testing.T) {
 	if got := Styles[markdown.StyleQuote].Render("x"); !strings.Contains(got, "\x1b[3") {
 		t.Errorf("the rendering of the quote text does not contain italics: %q", got)
 	}
+}
+
+// TestUseSwitchesTheme checks that Use replaces every style, and that the
+// light theme really looks different from the dark one.
+func TestUseSwitchesTheme(t *testing.T) {
+	setTrueColorProfile()
+	t.Cleanup(func() { Use(mustBuiltin(t, "dark")) })
+
+	Use(mustBuiltin(t, "dark"))
+	dark := DimStyles[markdown.StyleBold].Render("x")
+	darkErr := Error.Render("x")
+	Use(mustBuiltin(t, "light"))
+	if got := DimStyles[markdown.StyleBold].Render("x"); got == dark {
+		t.Errorf("dim bold did not change with the theme: %q", got)
+	}
+	if got := Error.Render("x"); got == darkErr {
+		t.Errorf("error style did not change with the theme: %q", got)
+	}
+	if Selection.Render("x") == "x" || Toast.Render("x") == "x" {
+		t.Error("ui styles are empty after Use")
+	}
+}
+
+// TestCustomColoursReachStyles checks hex colours and attributes of a custom
+// theme end up in the rendered text.
+func TestCustomColoursReachStyles(t *testing.T) {
+	setTrueColorProfile()
+	t.Cleanup(func() { Use(mustBuiltin(t, "dark")) })
+
+	th, err := themefile.Parse("[dim]\nbold = \"fg=#ff0000 italic\"\n", themefile.Builtin)
+	if err != nil {
+		t.Fatal(err)
+	}
+	Use(th)
+	got := DimStyles[markdown.StyleBold].Render("x")
+	if !strings.Contains(got, "255;0;0") || !strings.Contains(got, "\x1b[3") {
+		t.Errorf("custom style rendered as %q", got)
+	}
+}
+
+// TestResolve checks the built-in names and the automatic choice.
+func TestResolve(t *testing.T) {
+	for _, name := range []string{"dark", "light", "auto"} {
+		if _, err := Resolve(name, t.TempDir()); err != nil {
+			t.Errorf("Resolve(%q): %v", name, err)
+		}
+	}
+	if _, err := Resolve("ghost", t.TempDir()); err == nil {
+		t.Error("Resolve of a missing theme did not fail")
+	}
+}
+
+func mustBuiltin(t *testing.T, name string) themefile.Theme {
+	t.Helper()
+	th, ok := themefile.Builtin(name)
+	if !ok {
+		t.Fatalf("no built-in theme %q", name)
+	}
+	return th
 }

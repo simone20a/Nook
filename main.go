@@ -8,15 +8,41 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 
 	"nook/internal/app"
+	"nook/internal/config"
 	"nook/internal/store"
+	"nook/internal/theme"
+	"nook/internal/themefile"
 )
 
+const usage = `Usage:
+  nook                      open the notes
+  nook config init          write a documented ~/.config/Nook/config.toml
+  nook config path          print the path of the configuration file
+  nook theme <dark|light>   print a built-in theme, as a starting point for your own
+  nook help                 show this text
+`
+
 func main() {
+	if len(os.Args) > 1 {
+		os.Exit(command(os.Args[1:]))
+	}
+
 	home, err := os.UserHomeDir()
 	if err != nil {
 		fatal(err)
 	}
-	root := os.Getenv("NOOK_DIR")
+	cfg, err := config.Load()
+	if err != nil {
+		fatal(err)
+	}
+	th, err := theme.Resolve(cfg.Theme, cfg.Dir)
+	if err != nil {
+		fatal(err)
+	}
+	theme.Use(th)
+	app.SetVim(cfg.Vim)
+
+	root := cfg.NotesDir
 	if root == "" {
 		root = filepath.Join(home, ".nook")
 	}
@@ -35,6 +61,39 @@ func main() {
 	if _, err := p.Run(); err != nil {
 		fatal(err)
 	}
+}
+
+// command runs a subcommand and returns the exit status.
+func command(args []string) int {
+	switch {
+	case args[0] == "theme" && len(args) == 2:
+		src, ok := themefile.Source(args[1])
+		if !ok {
+			fmt.Fprintf(os.Stderr, "nook: no built-in theme %q (try dark or light)\n", args[1])
+			return 1
+		}
+		fmt.Print(src)
+	case args[0] == "config" && len(args) == 2 && args[1] == "init":
+		path, err := config.Init()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "nook:", err)
+			return 1
+		}
+		fmt.Println("wrote", path)
+	case args[0] == "config" && len(args) == 2 && args[1] == "path":
+		cfg, err := config.Load()
+		if cfg.File == "" {
+			fmt.Fprintln(os.Stderr, "nook:", err)
+			return 1
+		}
+		fmt.Println(cfg.File)
+	case args[0] == "help" || args[0] == "-h" || args[0] == "--help":
+		fmt.Print(usage)
+	default:
+		fmt.Fprint(os.Stderr, usage)
+		return 2
+	}
+	return 0
 }
 
 // importLegacy moves the notes of the old SQLite databases (from when Nook
@@ -63,6 +122,6 @@ func importLegacy(home, root string) {
 }
 
 func fatal(err error) {
-	fmt.Fprintln(os.Stderr, err)
+	fmt.Fprintln(os.Stderr, "nook:", err)
 	os.Exit(1)
 }

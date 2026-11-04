@@ -117,7 +117,7 @@ var helpPages = []helpPage{
 		hk("shift + drag", "native terminal selection"),
 	}},
 	{"Vim", []helpRow{
-		hh("Modes (start Nook with NOOK_VIM=1)"),
+		hh("Modes (turn on with vim = true in the config)"),
 		hk("i a / I A", "insert before / after, at line start / end"),
 		hk("o / O", "open a line below / above and insert"),
 		hk("v / V", "select characters / lines, then d y c"),

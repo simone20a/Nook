@@ -59,7 +59,7 @@ func newEditorScreen(st *store.Store, note *store.Note, w, h int) editorScreen {
 		lines = []string{""}
 	}
 	ed := editor.New(lines, contentW(w), edHeight(contentH(h)))
-	if os.Getenv(vimEnv) == "1" {
+	if vimEnabled() {
 		ed = ed.WithVim()
 	}
 	return editorScreen{
@@ -72,9 +72,24 @@ func newEditorScreen(st *store.Store, note *store.Note, w, h int) editorScreen {
 	}
 }
 
-// vimEnv is the environment variable that turns on vim mode in the editor:
-// "1" activates it; any other value (or its absence) leaves the usual keys.
+// vimEnv is the environment variable that turns vim mode in the editor on or
+// off: "1" activates it, any other non-empty value leaves the usual keys.
+// When it is empty or unset the configuration decides (see SetVim).
 const vimEnv = "NOOK_VIM"
+
+// defaultVim is the vim mode setting of the configuration file.
+var defaultVim bool
+
+// SetVim sets whether notes open in vim mode when NOOK_VIM does not say.
+func SetVim(on bool) { defaultVim = on }
+
+// vimEnabled reports whether the editor starts in vim mode.
+func vimEnabled() bool {
+	if v := os.Getenv(vimEnv); v != "" {
+		return v == "1"
+	}
+	return defaultVim
+}
 
 // edHeight is the height to give the text for a content height ch: the
 // content is ch rows high minus the footer one and the empty row above it,
@@ -462,13 +477,13 @@ func formatPaletteBox(s editorScreen) string {
 	width := 2 + 1 + 2 + paletteLabelW + paletteExampleW
 	lines := []string{
 		theme.BannerAcc.Render("Formatting"),
-		edPromptStyle.Render("press a letter, or ↑/↓ and enter"),
+		theme.DimText.Render("press a letter, or ↑/↓ and enter"),
 	}
 	group := ""
 	for i, a := range formatPaletteActions {
 		if a.group != group {
 			group = a.group
-			lines = append(lines, edPromptStyle.Render(strings.ToUpper(group)))
+			lines = append(lines, theme.DimText.Render(strings.ToUpper(group)))
 		}
 		if i == s.paletteChoice {
 			plain := "› " + a.key + "  " + padPlain(a.label, paletteLabelW) + padPlain(a.example, paletteExampleW)
@@ -476,7 +491,7 @@ func formatPaletteBox(s editorScreen) string {
 			continue
 		}
 		lines = append(lines, "  "+theme.BannerAcc.Render(a.key)+"  "+
-			padPlain(a.label, paletteLabelW)+edPromptStyle.Render(padPlain(a.example, paletteExampleW)))
+			padPlain(a.label, paletteLabelW)+theme.DimText.Render(padPlain(a.example, paletteExampleW)))
 	}
 	return strings.Join(lines, "\n")
 }
@@ -509,9 +524,6 @@ func (s editorScreen) edConfirmPrompt() (editorScreen, tea.Cmd) {
 	}
 }
 
-// edPromptStyle is the style of the popup text.
-var edPromptStyle = theme.DimText
-
 // promptBox builds the content of the Save/Discard/Cancel popup: the title
 // row, an empty row and the row of choices with the current one between
 // square brackets.
@@ -528,11 +540,11 @@ func promptBox(s editorScreen) string {
 		if i == s.promptChoice {
 			parts[i] = theme.Selected.Render("[" + label + "]")
 		} else {
-			parts[i] = edPromptStyle.Render(" " + label + " ")
+			parts[i] = theme.DimText.Render(" " + label + " ")
 		}
 	}
 	line := truncatePlain(strings.Join(parts, " "), maxPopupW(s.width))
-	return edPromptStyle.Render("Unsaved changes") + "\n\n" + line
+	return theme.DimText.Render("Unsaved changes") + "\n\n" + line
 }
 
 // View renders the editor screen: the text, the footer row, with the prompt popup

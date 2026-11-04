@@ -274,3 +274,17 @@ func TestVimSurvivesResize(t *testing.T) {
 		t.Errorf("text = %q, want %q", got, "hello")
 	}
 }
+
+// TestVimModeFromConfig checks that the configuration turns vim mode on when
+// NOOK_VIM does not say, and that NOOK_VIM wins over it.
+func TestVimModeFromConfig(t *testing.T) {
+	t.Cleanup(func() { SetVim(false) })
+	SetVim(true)
+	for value, want := range map[string]bool{"": true, "1": true, "0": false, "no": false} {
+		t.Setenv(vimEnv, value)
+		footer := newEditorScreen(nil, nil, 80, 24).ed.Footer()
+		if got := strings.Contains(footer, "NORMAL"); got != want {
+			t.Errorf("vim=true, NOOK_VIM=%q: vim mode %v, want %v", value, got, want)
+		}
+	}
+}
