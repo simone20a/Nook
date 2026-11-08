@@ -23,6 +23,7 @@ type Table struct {
 	Start, End int // first and last line, inclusive
 	Aligns     []Align
 	Widths     []int // width of the text of each column, in cells
+	Words      []int // width of the longest word of each column
 }
 
 // cellSpan is the trimmed text of a cell and its byte offset in the raw line.
@@ -141,7 +142,7 @@ func FindTable(lines []string, idx int) (Table, bool) {
 		for end+1 < len(lines) && isRowLine(lines[end+1]) {
 			end++
 		}
-		t := Table{Start: h, End: end, Aligns: aligns, Widths: make([]int, len(aligns))}
+		t := Table{Start: h, End: end, Aligns: aligns, Widths: make([]int, len(aligns)), Words: make([]int, len(aligns))}
 		for r := h; r <= end; r++ {
 			if r == h+1 {
 				continue
@@ -150,8 +151,14 @@ func FindTable(lines []string, idx int) (Table, bool) {
 				if k >= len(t.Widths) {
 					break
 				}
-				if w := cellWidth(renderInline(c.text, StyleNone, c.off)); w > t.Widths[k] {
+				text := renderInline(c.text, StyleNone, c.off)
+				if w := cellWidth(text); w > t.Widths[k] {
 					t.Widths[k] = w
+				}
+				for _, word := range strings.Fields(string(joined(text))) {
+					if w := utf8.RuneCountInString(word); w > t.Words[k] {
+						t.Words[k] = w
+					}
 				}
 			}
 		}
@@ -160,19 +167,85 @@ func FindTable(lines []string, idx int) (Table, bool) {
 	return Table{}, false
 }
 
-// RenderTableLine draws line idx of table t: the borders, the cells padded to
-// the width of their column according to its alignment, and for the separator
-// row a line of "─". Cell contents keep their inline styles.
+// RenderTableLine draws line idx of table t on a single row: the borders, the
+// cells padded to the width of their column according to its alignment, and
+// for the separator row a line of "─". Cell contents keep their inline styles.
 func RenderTableLine(lines []string, t Table, idx int) []Segment {
+	return tableRows(lines, t, idx, t.Widths)[0]
+}
+
+// tableOverhead is the width of the borders and the blanks around the cells
+// of a table with n columns: "│ " before each cell, " " after it, and the last "│".
+func tableOverhead(n int) int { return 3*n + 1 }
+
+// TableWidths returns the column widths to draw t in width cells. They are
+// the natural ones when the table fits; otherwise the widest columns are
+// narrowed one cell at a time, not below the longest word of the column (up
+// to 12 cells) when that is possible, not below 3 cells otherwise. ok is
+// false when even that does not fit. A width of 0 or less means no limit.
+func TableWidths(t Table, width int) (widths []int, ok bool) {
+	natural := append([]int(nil), t.Widths...)
+	avail := width - tableOverhead(len(natural))
+	sum := func(w []int) int {
+		n := 0
+		for _, v := range w {
+			n += v
+		}
+		return n
+	}
+	if width <= 0 || sum(natural) <= avail {
+		return natural, true
+	}
+	for _, minWord := range []bool{true, false} {
+		floor := make([]int, len(natural))
+		for k, nat := range natural {
+			floor[k] = min(nat, 3)
+			if minWord && k < len(t.Words) {
+				floor[k] = min(nat, max(3, min(t.Words[k], 12)))
+			}
+		}
+		if sum(floor) > avail {
+			continue
+		}
+		w := append([]int(nil), natural...)
+		for sum(w) > avail {
+			widest := -1
+			for k := range w {
+				if w[k] > floor[k] && (widest < 0 || w[k] > w[widest]) {
+					widest = k
+				}
+			}
+			w[widest]--
+		}
+		return w, true
+	}
+	return nil, false
+}
+
+// RenderTableRows draws line idx of table t in at most width cells. When the
+// table is wider, its columns are narrowed (see TableWidths) and the text of
+// a cell goes on to further rows inside its column, so a table line may take
+// several rows; if the columns cannot be narrowed enough the line is drawn on
+// one row, which the caller cuts. A width of 0 or less means no limit.
+func RenderTableRows(lines []string, t Table, idx int, width int) [][]Segment {
+	widths, ok := TableWidths(t, width)
+	if !ok {
+		return [][]Segment{RenderTableLine(lines, t, idx)}
+	}
+	return tableRows(lines, t, idx, widths)
+}
+
+// tableRows draws line idx with the given column widths, wrapping the cells.
+func tableRows(lines []string, t Table, idx int, widths []int) [][]Segment {
 	raw := lines[idx]
 	if idx == t.Start+1 {
-		parts := make([]string, len(t.Widths))
-		for k, w := range t.Widths {
+		parts := make([]string, len(widths))
+		for k, w := range widths {
 			parts[k] = strings.Repeat("─", w+2)
 		}
-		return []Segment{{
+		return [][]Segment{{{
 			Text: "├" + strings.Join(parts, "┼") + "┤", Style: StyleTableBorder, RawFrom: 0, RawTo: len(raw),
-		}}
+		}}}
 	}
 
 	base := StyleNone
@@ -183,33 +256,51 @@ func RenderTableLine(lines []string, t Table, idx int) []Segment {
 	border := func(at int) Segment {
 		return Segment{Text: "│", Style: StyleTableBorder, RawFrom: at, RawTo: at}
 	}
-	at := 0
+	start := 0
 	if len(cells) > 0 {
-		at = cells[0].off
+		start = cells[0].off
 	}
-	segs := []Segment{border(at)}
-	for k, w := range t.Widths {
+
+	// Every cell is cut into rows of its column's width; the line is as tall
+	// as its tallest cell.
+	parts := make([][][]Segment, len(widths))
+	height := 1
+	for k, w := range widths {
 		c := cellSpan{off: len(raw)}
 		if k < len(cells) {
 			c = cells[k]
 		}
-		inline := renderInline(c.text, base, c.off)
-		gap := w - cellWidth(inline)
-		if gap < 0 {
-			gap = 0
-		}
-		padL, padR := 0, gap
-		switch t.Aligns[k] {
-		case AlignRight:
-			padL, padR = gap, 0
-		case AlignCenter:
-			padL, padR = gap/2, gap-gap/2
-		}
-		end := c.off + len(c.text)
-		segs = append(segs, Segment{Text: " " + strings.Repeat(" ", padL), Style: base, RawFrom: c.off, RawTo: c.off})
-		segs = append(segs, inline...)
-		segs = append(segs, Segment{Text: strings.Repeat(" ", padR) + " ", Style: base, RawFrom: end, RawTo: end})
-		segs = append(segs, border(end))
+		parts[k] = wrapPlain(renderInline(c.text, base, c.off), w)
+		height = max(height, len(parts[k]))
 	}
-	return segs
+
+	out := make([][]Segment, height)
+	for j := range out {
+		segs := []Segment{border(start)}
+		for k, w := range widths {
+			c := cellSpan{off: len(raw)}
+			if k < len(cells) {
+				c = cells[k]
+			}
+			var part []Segment
+			if j < len(parts[k]) {
+				part = parts[k][j]
+			}
+			gap := max(w-cellWidth(part), 0)
+			padL, padR := 0, gap
+			switch t.Aligns[k] {
+			case AlignRight:
+				padL, padR = gap, 0
+			case AlignCenter:
+				padL, padR = gap/2, gap-gap/2
+			}
+			end := c.off + len(c.text)
+			segs = append(segs, Segment{Text: " " + strings.Repeat(" ", padL), Style: base, RawFrom: c.off, RawTo: c.off})
+			segs = append(segs, part...)
+			segs = append(segs, Segment{Text: strings.Repeat(" ", padR) + " ", Style: base, RawFrom: end, RawTo: end})
+			segs = append(segs, border(end))
+		}
+		out[j] = segs
+	}
+	return out
 }

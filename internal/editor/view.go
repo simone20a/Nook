@@ -11,6 +11,19 @@ import (
 
 // View draws the editor: one row for each screen row, separated by "\n".
 func (e Editor) View() string {
+	if e.wrap {
+		rows := make([]string, e.height)
+		for r, ref := range e.layout() {
+			switch {
+			case !ref.ok:
+			case ref.focus:
+				rows[r] = e.renderFocusRow(ref.sub)
+			default:
+				rows[r] = e.renderSegs(ref.line, ref.segs, ref.inside)
+			}
+		}
+		return strings.Join(rows, "\n")
+	}
 	out := ""
 	for r := 0; r < e.height; r++ {
 		if r > 0 {
@@ -50,14 +63,20 @@ func (e Editor) Footer() string {
 // rows without focus is fixed: it does not depend on the distance from the centre.
 func (e Editor) renderRow(r int) string {
 	if r == e.focusRow() {
-		return e.renderFocusRow()
+		return e.renderFocusRow(0)
 	}
 	idx := e.docIndexForRow(r)
 	if idx < 0 || idx >= len(e.lines) {
 		return ""
 	}
-	raw := e.lines[idx]
 	segs, inside := e.segmentsFor(idx)
+	return e.renderSegs(idx, segs, inside)
+}
+
+// renderSegs draws one screen row of the rendered line idx: segs are the
+// segments of the row, which is the whole line unless word wrap cut it.
+func (e Editor) renderSegs(idx int, segs []markdown.Segment, inside bool) string {
+	raw := e.lines[idx]
 
 	// A heading is highlighted: its background colours the text and a few
 	// spaces after it, and the inline styles inside it keep the background.
@@ -151,7 +170,7 @@ func isInsideFence(lines []string, idx int) bool {
 // is compensated with spaces so as not to shift the text on screen.
 // All the text shown is rendered with theme.Selected (bold), except the cursor
 // character, which stays in reverse.
-func (e Editor) renderFocusRow() string {
+func (e Editor) renderFocusRow(sub int) string {
 	focus := e.focusLine()
 	raw := e.LineAt(focus)
 
@@ -171,23 +190,39 @@ func (e Editor) renderFocusRow() string {
 	}
 
 	runes := []rune(raw)
-	start := e.hScroll
-	if start < 0 {
-		start = 0
-	}
-	if start > len(runes) {
-		start = len(runes)
-	}
-	end := start + rawW
-	if end > len(runes) {
-		end = len(runes)
-	}
-
-	// While a selection is dragged the Focus Line can be another line than the
-	// cursor's: then no cursor is drawn on it.
-	cursorPos := padW + (e.cursorCol - e.hScroll)
-	if focus != e.cursorLine {
+	var start, end, cursorPos int
+	if e.wrap {
+		// The raw text is cut into rows: this one is [start, end), and the
+		// cursor is on it when its column falls in that range.
+		bs := e.rawBreaks(focus)
+		sub = min(sub, len(bs)-1)
+		start, end = bs[sub], len(runes)
+		if sub+1 < len(bs) {
+			end = bs[sub+1]
+		}
 		cursorPos = -1
+		if focus == e.cursorLine && markdown.RowOf(bs, e.cursorCol) == sub {
+			cursorPos = padW + (e.cursorCol - start)
+		}
+	} else {
+		start = e.hScroll
+		if start < 0 {
+			start = 0
+		}
+		if start > len(runes) {
+			start = len(runes)
+		}
+		end = start + rawW
+		if end > len(runes) {
+			end = len(runes)
+		}
+
+		// While a selection is dragged the Focus Line can be another line than the
+		// cursor's: then no cursor is drawn on it.
+		cursorPos = padW + (e.cursorCol - e.hScroll)
+		if focus != e.cursorLine {
+			cursorPos = -1
+		}
 	}
 
 	selFrom, selTo, hasSel := e.selectionOnLine(focus)

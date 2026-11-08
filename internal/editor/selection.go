@@ -60,9 +60,9 @@ func (e Editor) SetSelection(anchorLine, anchorCol, line, col int) Editor {
 // move while the button is held. The view is released by the next key, click
 // or scroll.
 func (e Editor) DragSelection(anchorLine, anchorCol, line, col int) Editor {
-	focus, h := e.focusLine(), e.hScroll
+	focus, sub, h := e.focusLine(), e.focusSub(), e.hScroll
 	e = e.SetSelection(anchorLine, anchorCol, line, col)
-	e.frozen, e.viewLine, e.hScroll = true, focus, h
+	e.frozen, e.viewLine, e.viewSub, e.hScroll = true, focus, sub, h
 	return e
 }
 

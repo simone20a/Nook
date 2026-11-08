@@ -4,12 +4,10 @@ import (
 	"os"
 	"strings"
 	"time"
-	"unicode/utf8"
 
 	tea "github.com/charmbracelet/bubbletea"
 
 	"nook/internal/editor"
-	"nook/internal/markdown"
 	"nook/internal/store"
 	"nook/internal/theme"
 )
@@ -62,6 +60,7 @@ func newEditorScreen(st *store.Store, note *store.Note, w, h int) editorScreen {
 	if vimEnabled() {
 		ed = ed.WithVim()
 	}
+	ed = ed.WithWrap(wrapOn)
 	return editorScreen{
 		ed:     ed,
 		note:   n,
@@ -82,6 +81,14 @@ var defaultVim bool
 
 // SetVim sets whether notes open in vim mode when NOOK_VIM does not say.
 func SetVim(on bool) { defaultVim = on }
+
+// wrapOn is whether word wrap is on in the editor. It starts as the
+// word_wrap setting (SetWrap) and follows ctrl+w, so the choice made in one
+// note holds for the next ones until Nook is closed.
+var wrapOn bool
+
+// SetWrap sets whether notes open with word wrap on.
+func SetWrap(on bool) { wrapOn = on }
 
 // vimEnabled reports whether the editor starts in vim mode.
 func vimEnabled() bool {
@@ -214,6 +221,15 @@ func (s editorScreen) edUpdateKey(keyMsg tea.KeyMsg) (editorScreen, tea.Cmd) {
 		return s, cmd
 	}
 
+	if s.ed.WrapChanged {
+		s.ed.WrapChanged = false
+		wrapOn = s.ed.Wrap()
+		if wrapOn {
+			return s.edShowToast("word wrap on"), edToastTickCmd()
+		}
+		return s.edShowToast("word wrap off"), edToastTickCmd()
+	}
+
 	if s.ed.WantsSave {
 		s.ed.WantsSave = false
 		// :wq in vim mode asks to save and then exit.
@@ -282,46 +298,22 @@ func edClickCount(prev edClick, now time.Time, x, y int) int {
 	return prev.count + 1
 }
 
-// edHitLine maps the screen cell (x, y) to the raw document line
+// edHit maps the screen cell (x, y) to the raw document line and column
 // drawn there: it removes the margins, discards cells outside the content
-// area (including the footer row, which sits below the text) and converts the
-// view row into the document line. It also returns the column x
-// inside the content area.
-func (s editorScreen) edHitLine(x, y int) (line, cell int, focus, ok bool) {
+// area (including the footer row, which sits below the text) and lets the
+// editor convert the rest, which it knows how to do for the Focus Line (raw
+// text after a gutter), for rendered lines (through their markdown segments)
+// and for rows cut by word wrap. The column is in runes, the unit of the
+// editor's columns.
+func (s editorScreen) edHit(x, y int) (line, col int, ok bool) {
 	cw, chh := contentW(s.width), contentH(s.height)
 	if marginsActive(s.width, s.height) {
 		x, y = x-marginX, y-marginY
 	}
 	if x < 0 || y < 0 || x >= cw || y >= chh {
-		return 0, 0, false, false
+		return 0, 0, false
 	}
-	idx, ok := s.ed.LineAtRow(y)
-	if !ok {
-		return 0, 0, false, false
-	}
-	return idx, x, y == s.ed.FocusRow(), true
-}
-
-// edHitCol converts the column cell, in cells of line line, into the column in
-// runes of the raw line, with markdown.MapCellToRaw on the segments the
-// view draws the line with: the resulting byte offset is counted in runes,
-// the unit of the editor's columns.
-//
-// On the Focus Line (focus true) the text is raw and drawn after a gutter, so
-// the column comes from the editor instead of from the markdown segments.
-func (s editorScreen) edHitCol(line, cell int, focus bool) int {
-	if focus {
-		return s.ed.FocusCellToCol(cell)
-	}
-	raw := s.ed.LineAt(line)
-	off := markdown.MapCellToRaw(s.ed.LineSegments(line), cell)
-	if off < 0 {
-		off = 0
-	}
-	if off > len(raw) {
-		off = len(raw)
-	}
-	return utf8.RuneCountInString(raw[:off])
+	return s.ed.HitCell(y, x)
 }
 
 // edWheelStep is how many lines the document moves for each wheel event.
@@ -368,11 +360,11 @@ func (s editorScreen) edUpdateMouse(m tea.MouseMsg) (editorScreen, tea.Cmd) {
 		if !s.dragging {
 			return s, nil
 		}
-		line, cell, focus, ok := s.edHitLine(m.X, m.Y)
+		line, col, ok := s.edHit(m.X, m.Y)
 		if !ok {
 			return s, nil
 		}
-		s.ed = s.ed.DragSelection(s.dragLine, s.dragCol, line, s.edHitCol(line, cell, focus))
+		s.ed = s.ed.DragSelection(s.dragLine, s.dragCol, line, col)
 		s.dragMoved = true
 		return s, nil
 	}
@@ -386,13 +378,13 @@ func (s editorScreen) edUpdateMouse(m tea.MouseMsg) (editorScreen, tea.Cmd) {
 
 	switch clicks {
 	case 1:
-		line, cell, focus, ok := s.edHitLine(m.X, m.Y)
+		line, col, ok := s.edHit(m.X, m.Y)
 		if !ok {
 			return s, nil
 		}
 		// The press sets the anchor of a possible drag selection, but does
 		// not move anything: the release decides (see above).
-		s.dragLine, s.dragCol = line, s.edHitCol(line, cell, focus)
+		s.dragLine, s.dragCol = line, col
 		s.dragging, s.dragMoved = true, false
 	case 2:
 		s.ed = s.ed.SelectWord()

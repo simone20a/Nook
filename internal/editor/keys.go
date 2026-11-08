@@ -72,6 +72,8 @@ func (e Editor) update(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "ctrl+t":
 		// It asks the screen to open the formatting palette.
 		e.WantsPalette = true
+	case "ctrl+w":
+		e = e.toggleWrap()
 
 	case "up":
 		e = e.moveUp()

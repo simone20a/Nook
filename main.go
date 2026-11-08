@@ -41,6 +41,7 @@ func main() {
 	}
 	theme.Use(th)
 	app.SetVim(cfg.Vim)
+	app.SetWrap(cfg.WordWrap)
 
 	root := cfg.NotesDir
 	if root == "" {

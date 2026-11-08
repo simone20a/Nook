@@ -32,7 +32,7 @@ func TestDefaultsWithoutFile(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Theme != "dark" || cfg.Vim || cfg.NotesDir != "" {
+	if cfg.Theme != "dark" || cfg.Vim || cfg.WordWrap || cfg.NotesDir != "" {
 		t.Errorf("defaults = %+v", cfg)
 	}
 	if want := filepath.Join(h, ".config", "Nook", "config.toml"); cfg.File != want {
@@ -46,29 +46,29 @@ func TestExampleIsTheDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if def := Default(); cfg.Theme != def.Theme || cfg.Vim != def.Vim || cfg.NotesDir != "" {
+	if def := Default(); cfg.Theme != def.Theme || cfg.Vim != def.Vim || cfg.WordWrap != def.WordWrap || cfg.NotesDir != "" {
 		t.Errorf("example config = %+v", cfg)
 	}
 }
 
 func TestReadsFile(t *testing.T) {
-	h := write(t, "theme = \"light\"\nvim = true\nnotes_dir = \"~/Notes\"\n")
+	h := write(t, "theme = \"light\"\nvim = true\nword_wrap = true\nnotes_dir = \"~/Notes\"\n")
 	cfg, err := load(env(nil), home(h))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Theme != "light" || !cfg.Vim || cfg.NotesDir != filepath.Join(h, "Notes") {
+	if cfg.Theme != "light" || !cfg.Vim || !cfg.WordWrap || cfg.NotesDir != filepath.Join(h, "Notes") {
 		t.Errorf("cfg = %+v", cfg)
 	}
 }
 
 func TestEnvironmentWins(t *testing.T) {
-	h := write(t, "theme = \"light\"\nvim = true\nnotes_dir = \"/a\"\n")
-	cfg, err := load(env(map[string]string{"NOOK_THEME": "auto", "NOOK_VIM": "0", "NOOK_DIR": "/b"}), home(h))
+	h := write(t, "theme = \"light\"\nvim = true\nword_wrap = true\nnotes_dir = \"/a\"\n")
+	cfg, err := load(env(map[string]string{"NOOK_THEME": "auto", "NOOK_VIM": "0", "NOOK_WRAP": "0", "NOOK_DIR": "/b"}), home(h))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.Theme != "auto" || cfg.Vim || cfg.NotesDir != "/b" {
+	if cfg.Theme != "auto" || cfg.Vim || cfg.WordWrap || cfg.NotesDir != "/b" {
 		t.Errorf("cfg = %+v", cfg)
 	}
 }
@@ -100,6 +100,7 @@ func TestErrorsNameFileAndLine(t *testing.T) {
 	cases := map[string]string{
 		"colour = \"red\"":      "unknown setting",
 		"vim = \"yes\"":         "expected true or false",
+		"word_wrap = 1":         "expected true or false",
 		"theme = \"\"":          "theme is empty",
 		"notes_dir = \"notes\"": "absolute",
 		"[extra]":               "unknown section",
@@ -121,6 +122,7 @@ func TestInit(t *testing.T) {
 	t.Setenv("NOOK_CONFIG", "")
 	t.Setenv("NOOK_THEME", "")
 	t.Setenv("NOOK_VIM", "")
+	t.Setenv("NOOK_WRAP", "")
 	t.Setenv("NOOK_DIR", "")
 	path, err := Init()
 	if err != nil {

@@ -3,7 +3,7 @@
 # Nook reads this file at start-up from ~/.config/Nook/config.toml (or from
 # $XDG_CONFIG_HOME/Nook/config.toml). Every setting is optional: the values
 # below are the defaults. Environment variables override the file:
-# NOOK_THEME, NOOK_VIM and NOOK_DIR.
+# NOOK_THEME, NOOK_VIM, NOOK_WRAP and NOOK_DIR.
 
 # Colour theme: "dark", "light", "auto" (dark or light, following the
 # terminal's background), or a custom theme: the name of a file in
@@ -13,6 +13,11 @@ theme = "dark"
 
 # Vim-style modal editing in the editor (NORMAL, INSERT, VISUAL).
 vim = false
+
+# Word wrap in the editor: long lines go on to the next rows of the screen
+# instead of being cut. Press ctrl+w in the editor to turn it on or off.
+# This is how notes open.
+word_wrap = false
 
 # Folder where the notes live. "~" is your home directory.
 # notes_dir = "~/.nook"

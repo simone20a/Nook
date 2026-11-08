@@ -172,7 +172,7 @@ func (e Editor) vimUpdate(key tea.KeyMsg) Editor {
 	s := key.String()
 
 	switch s {
-	case "ctrl+c", "ctrl+s", "f2", "ctrl+q", "ctrl+t":
+	case "ctrl+c", "ctrl+s", "f2", "ctrl+q", "ctrl+t", "ctrl+w":
 		m, _ := e.update(key)
 		return m.(Editor)
 	}
