@@ -36,6 +36,11 @@ func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return e, nil
 	}
 
+	// Reading mode only scrolls: its keys are handled apart.
+	if e.reading {
+		return e.readingUpdate(key), nil
+	}
+
 	// ctrl+y redoes (undo is asked by the screen, see Undo); the changes made
 	// by every other key are recorded.
 	if key.String() == "ctrl+y" {
@@ -72,8 +77,8 @@ func (e Editor) update(key tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "ctrl+t":
 		// It asks the screen to open the formatting palette.
 		e.WantsPalette = true
-	case "ctrl+w":
-		e = e.toggleWrap()
+	case "ctrl+p":
+		e = e.toggleReading()
 
 	case "up":
 		e = e.moveUp()
@@ -199,6 +204,9 @@ func (e Editor) applyFormatKey(s string) Editor {
 // It is the entry point of the formatting palette (ctrl+t), which chooses the
 // letter and passes it here; an unexpected letter leaves the editor unchanged.
 func (e Editor) ApplyFormat(letter string) Editor {
+	if e.reading {
+		return e
+	}
 	before := e.snapshot()
 	e = e.applyFormatKey(letter).commit(before, "")
 	if e.inVisual() {

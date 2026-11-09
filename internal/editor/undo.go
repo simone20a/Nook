@@ -79,7 +79,7 @@ func (e Editor) commit(before snapshot, kind string) Editor {
 // Undo takes back the last change, restoring text and cursor.
 func (e Editor) Undo() Editor {
 	e.frozen = false
-	if len(e.undo) == 0 {
+	if e.reading || len(e.undo) == 0 {
 		return e
 	}
 	last := e.undo[len(e.undo)-1]
@@ -92,7 +92,7 @@ func (e Editor) Undo() Editor {
 // Redo repeats the change taken back by Undo.
 func (e Editor) Redo() Editor {
 	e.frozen = false
-	if len(e.redo) == 0 {
+	if e.reading || len(e.redo) == 0 {
 		return e
 	}
 	next := e.redo[len(e.redo)-1]

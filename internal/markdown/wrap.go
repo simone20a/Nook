@@ -37,27 +37,6 @@ func breaks(rs []rune, w0, w int) []int {
 	}
 }
 
-// RowOf returns the row of the text, split at the given breaks, that holds
-// the rune col. The position just after the last rune belongs to the last row.
-func RowOf(breaks []int, col int) int {
-	row := 0
-	for i, b := range breaks {
-		if b <= col {
-			row = i
-		}
-	}
-	return row
-}
-
-// RowEnd returns the index after the last rune of a row that a cursor can
-// stand on: the next row's start minus one, or n for the last row.
-func RowEnd(breaks []int, row, n int) int {
-	if row+1 < len(breaks) {
-		return breaks[row+1] - 1
-	}
-	return n
-}
-
 // sliceSegments returns the part of segs that covers the runes [from, to) of
 // their joined text. A segment that shows its raw text unchanged keeps an
 // exact raw span; a synthesised one (a link label, a bullet) keeps the

@@ -21,7 +21,7 @@ var Example string
 type Config struct {
 	Theme    string // "dark", "light", "auto", a theme name or a path
 	Vim      bool   // vim-style modal editing
-	WordWrap bool   // word wrap on when a note opens
+	Reading  bool   // notes open in reading mode (read only)
 	NotesDir string // where the notes live; "" = ~/.nook
 	Dir      string // the configuration directory, ~/.config/Nook
 	File     string // the configuration file, which may not exist
@@ -46,8 +46,8 @@ func dir(getenv func(string) string, home func() (string, error)) (string, error
 }
 
 // Load reads the configuration file (a missing file is fine: the defaults
-// apply) and then the environment variables NOOK_THEME, NOOK_VIM, NOOK_WRAP
-// and NOOK_DIR, which win over it. NOOK_CONFIG points at another file.
+// apply) and then the environment variables NOOK_THEME, NOOK_VIM,
+// NOOK_READING and NOOK_DIR, which win over it. NOOK_CONFIG points at another file.
 func Load() (Config, error) { return load(os.Getenv, os.UserHomeDir) }
 
 func load(getenv func(string) string, home func() (string, error)) (Config, error) {
@@ -79,8 +79,8 @@ func load(getenv func(string) string, home func() (string, error)) (Config, erro
 	if v := getenv("NOOK_VIM"); v != "" {
 		cfg.Vim = v == "1"
 	}
-	if v := getenv("NOOK_WRAP"); v != "" {
-		cfg.WordWrap = v == "1"
+	if v := getenv("NOOK_READING"); v != "" {
+		cfg.Reading = v == "1"
 	}
 	if v := getenv("NOOK_DIR"); v != "" {
 		cfg.NotesDir = v
@@ -114,12 +114,12 @@ func (c *Config) apply(src string, home func() (string, error)) error {
 				return err
 			}
 			c.Vim = b
-		case "word_wrap":
+		case "start_in_reading":
 			b, err := v.Bool()
 			if err != nil {
 				return err
 			}
-			c.WordWrap = b
+			c.Reading = b
 		case "notes_dir":
 			p, err := expandHome(v.Text, home)
 			if err != nil {
@@ -130,7 +130,7 @@ func (c *Config) apply(src string, home func() (string, error)) error {
 			}
 			c.NotesDir = p
 		default:
-			return fmt.Errorf("line %d: unknown setting %q (known: theme, vim, word_wrap, notes_dir)", v.Line, k)
+			return fmt.Errorf("line %d: unknown setting %q (known: theme, vim, start_in_reading, notes_dir)", v.Line, k)
 		}
 	}
 	return nil

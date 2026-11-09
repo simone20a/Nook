@@ -60,7 +60,9 @@ func newEditorScreen(st *store.Store, note *store.Note, w, h int) editorScreen {
 	if vimEnabled() {
 		ed = ed.WithVim()
 	}
-	ed = ed.WithWrap(wrapOn)
+	if readingDefault {
+		ed = ed.WithReading(true)
+	}
 	return editorScreen{
 		ed:     ed,
 		note:   n,
@@ -82,13 +84,12 @@ var defaultVim bool
 // SetVim sets whether notes open in vim mode when NOOK_VIM does not say.
 func SetVim(on bool) { defaultVim = on }
 
-// wrapOn is whether word wrap is on in the editor. It starts as the
-// word_wrap setting (SetWrap) and follows ctrl+w, so the choice made in one
-// note holds for the next ones until Nook is closed.
-var wrapOn bool
+// readingDefault is whether notes open in reading mode (see SetReading).
+var readingDefault bool
 
-// SetWrap sets whether notes open with word wrap on.
-func SetWrap(on bool) { wrapOn = on }
+// SetReading sets whether notes open in reading mode, read only, instead of
+// ready to edit. ctrl+p switches mode in the editor either way.
+func SetReading(on bool) { readingDefault = on }
 
 // vimEnabled reports whether the editor starts in vim mode.
 func vimEnabled() bool {
@@ -221,13 +222,12 @@ func (s editorScreen) edUpdateKey(keyMsg tea.KeyMsg) (editorScreen, tea.Cmd) {
 		return s, cmd
 	}
 
-	if s.ed.WrapChanged {
-		s.ed.WrapChanged = false
-		wrapOn = s.ed.Wrap()
-		if wrapOn {
-			return s.edShowToast("word wrap on"), edToastTickCmd()
+	if s.ed.ReadChanged {
+		s.ed.ReadChanged = false
+		if s.ed.Reading() {
+			return s.edShowToast("reading mode"), edToastTickCmd()
 		}
-		return s.edShowToast("word wrap off"), edToastTickCmd()
+		return s.edShowToast("editing"), edToastTickCmd()
 	}
 
 	if s.ed.WantsSave {
@@ -298,13 +298,10 @@ func edClickCount(prev edClick, now time.Time, x, y int) int {
 	return prev.count + 1
 }
 
-// edHit maps the screen cell (x, y) to the raw document line and column
-// drawn there: it removes the margins, discards cells outside the content
-// area (including the footer row, which sits below the text) and lets the
-// editor convert the rest, which it knows how to do for the Focus Line (raw
-// text after a gutter), for rendered lines (through their markdown segments)
-// and for rows cut by word wrap. The column is in runes, the unit of the
-// editor's columns.
+// edHit maps the screen cell (x, y) to the raw document position drawn
+// there: it removes the margins, discards cells outside the content area
+// (including the footer row, which sits below the text) and lets the editor
+// convert the view cell into (line, column in runes).
 func (s editorScreen) edHit(x, y int) (line, col int, ok bool) {
 	cw, chh := contentW(s.width), contentH(s.height)
 	if marginsActive(s.width, s.height) {
@@ -351,7 +348,7 @@ func (s editorScreen) edUpdateMouse(m tea.MouseMsg) (editorScreen, tea.Cmd) {
 	// selection stays and the Focus Line does not move.
 	switch m.Action {
 	case tea.MouseActionRelease:
-		if s.dragging && !s.dragMoved {
+		if s.dragging && !s.dragMoved && !s.ed.Reading() {
 			s.ed = s.ed.SetCursor(s.dragLine, s.dragCol)
 		}
 		s.dragging, s.dragMoved = false, false
@@ -387,10 +384,14 @@ func (s editorScreen) edUpdateMouse(m tea.MouseMsg) (editorScreen, tea.Cmd) {
 		s.dragLine, s.dragCol = line, col
 		s.dragging, s.dragMoved = true, false
 	case 2:
-		s.ed = s.ed.SelectWord()
+		if !s.ed.Reading() {
+			s.ed = s.ed.SelectWord()
+		}
 		s.dragging = false
 	case 3:
-		s.ed = s.ed.SelectLine()
+		if !s.ed.Reading() {
+			s.ed = s.ed.SelectLine()
+		}
 		s.dragging = false
 	}
 	return s, nil

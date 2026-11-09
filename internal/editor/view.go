@@ -11,18 +11,8 @@ import (
 
 // View draws the editor: one row for each screen row, separated by "\n".
 func (e Editor) View() string {
-	if e.wrap {
-		rows := make([]string, e.height)
-		for r, ref := range e.layout() {
-			switch {
-			case !ref.ok:
-			case ref.focus:
-				rows[r] = e.renderFocusRow(ref.sub)
-			default:
-				rows[r] = e.renderSegs(ref.line, ref.segs, ref.inside)
-			}
-		}
-		return strings.Join(rows, "\n")
+	if e.reading {
+		return e.viewReading()
 	}
 	out := ""
 	for r := 0; r < e.height; r++ {
@@ -37,6 +27,9 @@ func (e Editor) View() string {
 // edFooterHint is the footer text: the essential keys.
 const edFooterHint = "ctrl+s save · esc exit · ctrl+t format · ctrl+/ help"
 
+// edReadHint is the footer text of reading mode.
+const edReadHint = "READING · ctrl+p edit · ctrl+q exit · ctrl+/ help"
+
 // Footer renders the last row of the editor screen: a single row
 // truncated to the width, in dimmed colour via theme.DimText and padded
 // with spaces on the right. It is not part of View: the screen reserves a
@@ -46,10 +39,13 @@ func (e Editor) Footer() string {
 	if e.width <= 0 {
 		return ""
 	}
-	if e.vim {
+	hint := edFooterHint
+	if e.reading {
+		hint = edReadHint
+	} else if e.vim {
 		return e.vimFooter()
 	}
-	plain := truncate(edFooterHint, e.width)
+	plain := truncate(hint, e.width)
 	pad := e.width - ansi.StringWidth(plain)
 	if pad < 0 {
 		pad = 0
@@ -63,7 +59,7 @@ func (e Editor) Footer() string {
 // rows without focus is fixed: it does not depend on the distance from the centre.
 func (e Editor) renderRow(r int) string {
 	if r == e.focusRow() {
-		return e.renderFocusRow(0)
+		return e.renderFocusRow()
 	}
 	idx := e.docIndexForRow(r)
 	if idx < 0 || idx >= len(e.lines) {
@@ -74,7 +70,10 @@ func (e Editor) renderRow(r int) string {
 }
 
 // renderSegs draws one screen row of the rendered line idx: segs are the
-// segments of the row, which is the whole line unless word wrap cut it.
+// segments of the row, which is the whole line unless reading mode cut it.
+// Out of focus the dimmed palette is used; in reading mode every line is in
+// full strength, headings apart: they keep the dimmed palette, which is the
+// one with their highlight.
 func (e Editor) renderSegs(idx int, segs []markdown.Segment, inside bool) string {
 	raw := e.lines[idx]
 
@@ -91,6 +90,9 @@ func (e Editor) renderSegs(idx int, segs []markdown.Segment, inside bool) string
 	var b strings.Builder
 	for _, seg := range segs {
 		st := theme.DimStyles[seg.Style]
+		if e.reading && !isHead {
+			st = theme.Styles[seg.Style]
+		}
 		if isHead {
 			st = st.Inherit(theme.DimStyles[headStyle])
 		}
@@ -112,7 +114,7 @@ func (e Editor) renderSegs(idx int, segs []markdown.Segment, inside bool) string
 				b.WriteString(theme.DimStyles[headStyle].Render(strings.Repeat(" ", fill)))
 			}
 		} else {
-			b.WriteString(blockFill(segs[n-1].Style, fill))
+			b.WriteString(blockFill(segs[n-1].Style, fill, e.reading))
 		}
 	}
 	return truncate(b.String(), e.width)
@@ -125,15 +127,20 @@ const headingPad = 2
 // blockFill extends rules and code fences with "─" up to the width of the
 // editor, and code lines with spaces, so that a code block reads as a panel.
 // It returns "" for every other style or when there is no room left.
-func blockFill(sty markdown.Style, n int) string {
+// full chooses the full-strength palette instead of the dimmed one.
+func blockFill(sty markdown.Style, n int, full bool) string {
 	if n <= 0 {
 		return ""
 	}
+	styles := theme.DimStyles
+	if full {
+		styles = theme.Styles
+	}
 	switch sty {
 	case markdown.StyleRule, markdown.StyleFence:
-		return theme.DimStyles[sty].Render(strings.Repeat("─", n))
+		return styles[sty].Render(strings.Repeat("─", n))
 	case markdown.StyleCodeBlock:
-		return theme.DimStyles[sty].Render(strings.Repeat(" ", n))
+		return styles[sty].Render(strings.Repeat(" ", n))
 	}
 	return ""
 }
@@ -170,7 +177,7 @@ func isInsideFence(lines []string, idx int) bool {
 // is compensated with spaces so as not to shift the text on screen.
 // All the text shown is rendered with theme.Selected (bold), except the cursor
 // character, which stays in reverse.
-func (e Editor) renderFocusRow(sub int) string {
+func (e Editor) renderFocusRow() string {
 	focus := e.focusLine()
 	raw := e.LineAt(focus)
 
@@ -190,39 +197,23 @@ func (e Editor) renderFocusRow(sub int) string {
 	}
 
 	runes := []rune(raw)
-	var start, end, cursorPos int
-	if e.wrap {
-		// The raw text is cut into rows: this one is [start, end), and the
-		// cursor is on it when its column falls in that range.
-		bs := e.rawBreaks(focus)
-		sub = min(sub, len(bs)-1)
-		start, end = bs[sub], len(runes)
-		if sub+1 < len(bs) {
-			end = bs[sub+1]
-		}
-		cursorPos = -1
-		if focus == e.cursorLine && markdown.RowOf(bs, e.cursorCol) == sub {
-			cursorPos = padW + (e.cursorCol - start)
-		}
-	} else {
-		start = e.hScroll
-		if start < 0 {
-			start = 0
-		}
-		if start > len(runes) {
-			start = len(runes)
-		}
-		end = start + rawW
-		if end > len(runes) {
-			end = len(runes)
-		}
+	start := e.hScroll
+	if start < 0 {
+		start = 0
+	}
+	if start > len(runes) {
+		start = len(runes)
+	}
+	end := start + rawW
+	if end > len(runes) {
+		end = len(runes)
+	}
 
-		// While a selection is dragged the Focus Line can be another line than the
-		// cursor's: then no cursor is drawn on it.
-		cursorPos = padW + (e.cursorCol - e.hScroll)
-		if focus != e.cursorLine {
-			cursorPos = -1
-		}
+	// While a selection is dragged the Focus Line can be another line than the
+	// cursor's: then no cursor is drawn on it.
+	cursorPos := padW + (e.cursorCol - e.hScroll)
+	if focus != e.cursorLine {
+		cursorPos = -1
 	}
 
 	selFrom, selTo, hasSel := e.selectionOnLine(focus)

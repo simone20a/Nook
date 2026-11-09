@@ -53,21 +53,6 @@ func TestBreaks(t *testing.T) {
 	}
 }
 
-func TestRowOfAndRowEnd(t *testing.T) {
-	bs := []int{0, 6, 12}
-	for col, want := range map[int]int{0: 0, 5: 0, 6: 1, 11: 1, 12: 2, 15: 2} {
-		if got := RowOf(bs, col); got != want {
-			t.Errorf("RowOf(%d) = %d, want %d", col, got, want)
-		}
-	}
-	if got := RowEnd(bs, 0, 15); got != 5 {
-		t.Errorf("RowEnd(0) = %d", got)
-	}
-	if got := RowEnd(bs, 2, 15); got != 15 {
-		t.Errorf("RowEnd(2) = %d", got)
-	}
-}
-
 func TestWrapParagraph(t *testing.T) {
 	raw := "hello **big** world, this is long"
 	rows := WrapSegments(RenderLine(raw, false), 12)

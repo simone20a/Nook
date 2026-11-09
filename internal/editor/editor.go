@@ -17,10 +17,10 @@ type Editor struct {
 	// WantsPalette is exported: true when Update receives ctrl+t, that is when the
 	// formatting palette has to be opened. The screen reads it and resets it.
 	WantsPalette bool
-	// WrapChanged is exported: true when Update receives ctrl+w, that is when
-	// word wrap has just been turned on or off. The screen reads it, shows the
-	// new state and resets it.
-	WrapChanged bool
+	// ReadChanged is exported: true when Update receives ctrl+p, that is when
+	// reading mode has just been turned on or off. The screen reads it, shows
+	// the new state and resets it.
+	ReadChanged bool
 
 	lines      []string
 	cursorLine int
@@ -37,10 +37,12 @@ type Editor struct {
 	// of the selection) is on another line. Any key, click or scroll ends it.
 	frozen   bool
 	viewLine int
-	viewSub  int // with word wrap, the row of viewLine on the focus row
 
-	// wrap is true when word wrap is on (see wrap.go).
-	wrap bool
+	// Reading mode (see reading.go): the whole note rendered, read only.
+	reading   bool
+	readLine  int     // line on the middle row
+	readSub   int     // row of that line on the middle row
+	readEntry readPos // where reading mode was entered from
 
 	// History of changes for undo and redo; lastEdit and lastEditLine say what
 	// the previous change was, to merge runs of typing.
@@ -136,11 +138,6 @@ func (e Editor) FocusCellToCol(cell int) int {
 	if cell < 0 {
 		cell = 0
 	}
-	if e.wrap {
-		bs := e.rawBreaks(e.focusLine())
-		sub := min(e.focusSub(), len(bs)-1)
-		return min(bs[sub]+cell, markdown.RowEnd(bs, sub, runeLen(raw)))
-	}
 	col := cell + e.hScroll
 	if n := runeLen(raw); col > n {
 		col = n
@@ -179,8 +176,8 @@ func (e Editor) LineAtRow(r int) (int, bool) {
 	if r < 0 || r >= e.height {
 		return 0, false
 	}
-	if e.wrap {
-		ref := e.layout()[r]
+	if e.reading {
+		ref := e.readLayout()[r]
 		return ref.line, ref.ok
 	}
 	idx := e.docIndexForRow(r)
@@ -242,11 +239,6 @@ func (e Editor) SetCursor(line, col int) Editor {
 
 // ensureCursorVisible adjusts the horizontal scroll so that the cursor stays in view.
 func (e *Editor) ensureCursorVisible() {
-	if e.wrap {
-		// Rows are cut to the width: there is nothing to scroll sideways.
-		e.hScroll = 0
-		return
-	}
 	if e.cursorCol < e.hScroll {
 		e.hScroll = e.cursorCol
 	}
@@ -301,9 +293,6 @@ func (e Editor) currentLine() string {
 // moveUp moves the cursor one line up.
 func (e Editor) moveUp() Editor {
 	e.clearSelection()
-	if e.wrap {
-		return e.moveRows(-1)
-	}
 	if e.cursorLine > 0 {
 		e.cursorLine--
 	}
@@ -315,9 +304,6 @@ func (e Editor) moveUp() Editor {
 // moveDown moves the cursor one line down.
 func (e Editor) moveDown() Editor {
 	e.clearSelection()
-	if e.wrap {
-		return e.moveRows(1)
-	}
 	if e.cursorLine < len(e.lines)-1 {
 		e.cursorLine++
 	}
@@ -331,14 +317,11 @@ func (e Editor) moveDown() Editor {
 // Line, the document scrolls under it: this is what the mouse wheel and the
 // touchpad do.
 func (e Editor) Scroll(n int) Editor {
-	e.clearSelection()
-	if e.wrap {
-		// n screen rows, not n lines.
-		e = e.moveRows(n)
-		e.frozen = false
-		e.vimSettle()
-		return e
+	if e.reading {
+		// Reading mode scrolls by screen row and keeps the selection.
+		return e.readMove(n)
 	}
+	e.clearSelection()
 	e.cursorLine = e.focusLine() + n
 	e.frozen = false
 	if e.cursorLine > len(e.lines)-1 {
@@ -382,10 +365,6 @@ func (e Editor) moveRight() Editor {
 // moveHome brings the cursor to the start of the line.
 func (e Editor) moveHome() Editor {
 	e.clearSelection()
-	if e.wrap {
-		e.cursorCol = e.rowStart()
-		return e
-	}
 	e.cursorCol = 0
 	e.ensureCursorVisible()
 	return e
@@ -394,10 +373,6 @@ func (e Editor) moveHome() Editor {
 // moveEnd brings the cursor to the end of the line.
 func (e Editor) moveEnd() Editor {
 	e.clearSelection()
-	if e.wrap {
-		e.cursorCol = e.rowEnd()
-		return e
-	}
 	e.cursorCol = runeLen(e.currentLine())
 	e.ensureCursorVisible()
 	return e
@@ -427,9 +402,6 @@ func (e Editor) moveDocEnd() Editor {
 // pageUp moves the cursor height lines up.
 func (e Editor) pageUp() Editor {
 	e.clearSelection()
-	if e.wrap {
-		return e.moveRows(-e.height)
-	}
 	e.cursorLine -= e.height
 	if e.cursorLine < 0 {
 		e.cursorLine = 0
@@ -442,9 +414,6 @@ func (e Editor) pageUp() Editor {
 // pageDown moves the cursor height lines down.
 func (e Editor) pageDown() Editor {
 	e.clearSelection()
-	if e.wrap {
-		return e.moveRows(e.height)
-	}
 	e.cursorLine += e.height
 	if e.cursorLine > len(e.lines)-1 {
 		e.cursorLine = len(e.lines) - 1

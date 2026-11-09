@@ -117,7 +117,7 @@ func (e *Editor) vimSettle() {
 // A mouse selection ends before its last cell while VISUAL includes it: the
 // later end moves back by one to keep the same text selected.
 func (e *Editor) vimMouseSelect(mode vimMode) {
-	if !e.vim || e.vimMode == vimInsert {
+	if !e.vim || e.vimMode == vimInsert || e.reading {
 		return
 	}
 	if !e.selecting {
@@ -172,7 +172,7 @@ func (e Editor) vimUpdate(key tea.KeyMsg) Editor {
 	s := key.String()
 
 	switch s {
-	case "ctrl+c", "ctrl+s", "f2", "ctrl+q", "ctrl+t", "ctrl+w":
+	case "ctrl+c", "ctrl+s", "f2", "ctrl+q", "ctrl+t", "ctrl+p":
 		m, _ := e.update(key)
 		return m.(Editor)
 	}

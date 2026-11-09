@@ -93,8 +93,8 @@ italic, code, links, strikethrough, quotes, lists and checkboxes. Quotes
 block, consecutive lines included — even the Focus Line, which shows the raw `>`
 but keeps the bar. Lines that are not in focus use a muted palette that is
 **fixed** and identical for all of them: the dimming does not depend on the
-distance from the Focus Line. Long lines are truncated with `…`, unless
-[word wrap](#word-wrap) is on.
+distance from the Focus Line. Long lines are truncated with `…` (see
+[Reading mode](#reading-mode) to read them in full).
 
 Horizontal rules (`---`, `***`, `___`) are drawn as a full-width line, and fenced
 code blocks (```` ``` ```` or `~~~`) as a shaded panel closed by a top edge that shows
@@ -110,7 +110,7 @@ The Focus Line of a table row still shows the raw text.
 |---|---|
 | `ctrl+s` / `F2` | save (confirmation toast) |
 | `esc` / `ctrl+q` | back to the list; with unsaved changes opens the *Save / Discard / Cancel* popup |
-| `ctrl+w` | turn [word wrap](#word-wrap) on / off |
+| `ctrl+p` | turn [reading mode](#reading-mode) on / off |
 | `ctrl+c` | quit immediately |
 | `ctrl+shift+c` / `ctrl+shift+y` | copy the selection (see below) |
 | `↑` `↓` `←` `→` | move |
@@ -159,32 +159,23 @@ the point you pressed: the Focus Line stays where it was, also after the release
 and moves to the end of the selection with the next key. With the mouse enabled,
 native terminal selection is done by holding `Shift` (or from the terminal's menu).
 
-## Word wrap
+## Reading mode
 
-By default a line longer than the screen is cut with `…` (and scrolls sideways
-on the Focus Line). `ctrl+w` turns **word wrap** on: every line then takes as many
-screen rows as it needs, cut at spaces (a word longer than the screen is cut where
-the row ends). It stays on for the notes you open next until you press `ctrl+w`
-again or close Nook; to make it the default, set `word_wrap = true` in the
+`ctrl+p` (in both normal and [vim](#vim-mode) mode) switches to **reading mode**:
+the whole note is shown rendered, Focus Line included — no raw text, no cursor —
+at full strength, and long lines wrap at spaces to the width of the screen.
+Tables narrow their columns and wrap inside them. The note is read only.
+
+- Scroll with `↑` `↓` / `j` `k`, `pgup` `pgdn` / `ctrl+b` `ctrl+f` / `space`,
+  `ctrl+u` `ctrl+d` (half page), `home` / `g` (top), `end` / `G` (bottom) and the wheel.
+- `ctrl+s`, `ctrl+q`, `ctrl+c` work as usual; typing, deleting, pasting, the
+  palette, undo/redo and vim operators are disabled.
+- A drag selects text (copy with `ctrl+shift+c`); a plain click moves nothing.
+- `ctrl+p` again goes back to editing, with the cursor at the start of the row
+  you reached (or where it was, if you did not scroll).
+
+To open every note in reading mode, set `start_in_reading = true` in the
 [configuration](#configuration).
-
-With word wrap on:
-
-- The Focus Line shows its raw text on several rows, and the row with the cursor
-  stays on the middle row of the screen. The other lines are rendered and wrapped:
-  quotes keep their `▌` bar on every row, and list items and numbered items keep
-  their text aligned under the first row.
-- `↑` / `↓`, `pgup` / `pgdn` and the wheel move by screen row, and `home` / `end`
-  go to the start / end of the row. A click or a drag lands on the character under
-  the pointer, on any row. (In [vim mode](#vim-mode) `j` and `k` still move by line.)
-- **Tables** are narrowed to fit: the widest columns shrink first, never below
-  their longest word when there is room for it, and the text of a cell goes on
-  to further rows inside its column, with the borders repeated on each row. If a
-  table cannot fit even like that, its lines are cut with `…` as when word wrap is off.
-- Rules, code fences and the lines of a code block are never wrapped (a code line
-  that takes the focus does show on several rows).
-- A line is wrapped by the width of what is drawn, so it can reflow when it takes
-  the focus: its raw text is a little longer than the rendered one (`**`, `[](…)`).
 
 ## Formatting
 
@@ -299,7 +290,7 @@ setting is optional and these are the defaults:
 ```toml
 theme = "dark"          # "dark", "light", "auto", or a custom theme (see below)
 vim = false             # vim-style modal editing in the editor
-word_wrap = false       # long lines go on to the next rows of the screen
+start_in_reading = false # open notes in read-only reading mode (ctrl+p toggles)
 # notes_dir = "~/.nook" # where the notes live
 ```
 
@@ -307,7 +298,7 @@ word_wrap = false       # long lines go on to the next rows of the screen
 |---|---|---|
 | `theme` | `"dark"` (default), `"light"`, `"auto"` (dark or light according to the terminal's background), or a custom theme | `NOOK_THEME` |
 | `vim` | `true` or `false` — see [Vim mode](#vim-mode) | `NOOK_VIM` (`1` on, anything else off) |
-| `word_wrap` | `true` or `false` — whether notes open with [word wrap](#word-wrap) on | `NOOK_WRAP` (`1` on, anything else off) |
+| `start_in_reading` | `true` or `false` — whether notes open in [reading mode](#reading-mode) | `NOOK_READING` (`1` on, anything else off) |
 | `notes_dir` | absolute path, or starting with `~/`; default `~/.nook` | `NOOK_DIR` |
 
 Environment variables win over the file, which is handy for a one-off:
