@@ -333,3 +333,46 @@ func (e *Editor) insertLink() {
 	e.Dirty = true
 	e.ensureCursorVisible()
 }
+
+// ToggleDone is ctrl+x: it marks the checkboxes of the cursor's line, or of
+// the selected lines, as done, or as not done when all of them already are.
+// Lines without a checkbox are left alone. The text length does not change,
+// so the cursor stays where it is.
+func (e Editor) ToggleDone() Editor {
+	if e.reading {
+		return e
+	}
+	first, last := e.affectedLines()
+	if first > last {
+		first, last = last, first
+	}
+	var boxes []int
+	allDone := true
+	for i := max(first, 0); i <= last && i < len(e.lines); i++ {
+		if checkboxEmptyRe.MatchString(e.lines[i]) {
+			boxes, allDone = append(boxes, i), false
+		} else if checkboxCheckedRe.MatchString(e.lines[i]) {
+			boxes = append(boxes, i)
+		}
+	}
+	if len(boxes) == 0 {
+		return e
+	}
+	before := e.snapshot()
+	e.lines = append([]string(nil), e.lines...)
+	for _, i := range boxes {
+		if allDone {
+			m := checkboxCheckedRe.FindStringSubmatch(e.lines[i])
+			e.lines[i] = m[1] + "- [ ]" + m[3]
+		} else if m := checkboxEmptyRe.FindStringSubmatch(e.lines[i]); m != nil {
+			e.lines[i] = m[1] + "- [x]" + m[2]
+		}
+	}
+	e.Dirty = true
+	e = e.commit(before, "")
+	if e.inVisual() {
+		e.clearSelection()
+	}
+	e.vimSettle()
+	return e
+}

@@ -110,6 +110,7 @@ The Focus Line of a table row still shows the raw text.
 |---|---|
 | `ctrl+s` / `F2` | save (confirmation toast) |
 | `esc` / `ctrl+q` | back to the list; with unsaved changes opens the *Save / Discard / Cancel* popup |
+| `ctrl+x` | check / uncheck the `- [ ]` checkboxes of the line or selection (all done → all undone) |
 | `ctrl+p` | turn [reading mode](#reading-mode) on / off |
 | `ctrl+c` | quit immediately |
 | `ctrl+shift+c` / `ctrl+shift+y` | copy the selection (see below) |

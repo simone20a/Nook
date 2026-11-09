@@ -90,6 +90,7 @@ var helpPages = []helpPage{
 	{"Formatting", []helpRow{
 		hh("Palette"),
 		hk("ctrl+t", "open the formatting palette"),
+		hk("ctrl+x", "check / uncheck the checkboxes of the line or selection"),
 		hk("a letter", "apply that format at once"),
 		hk("↑ / ↓, enter, esc", "or choose, apply, close"),
 		hh("Letters in the palette"),

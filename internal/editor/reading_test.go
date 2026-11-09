@@ -129,3 +129,39 @@ func TestWithReadingStartsAtTop(t *testing.T) {
 		t.Fatal("still reading")
 	}
 }
+
+func TestToggleDone(t *testing.T) {
+	e := New([]string{"- [ ] a", "plain", "- [x] b"}, 20, 7)
+	e = press(e, ctrl(tea.KeyCtrlX))
+	if e.Lines()[0] != "- [x] a" {
+		t.Fatalf("got %q", e.Lines()[0])
+	}
+	e = press(e, ctrl(tea.KeyCtrlX))
+	if e.Lines()[0] != "- [ ] a" {
+		t.Fatalf("got %q", e.Lines()[0])
+	}
+	e = press(e, ctrl(tea.KeyCtrlZ))
+	// select all three lines: mixed -> all done
+	e = press(e, ctrl(tea.KeyDown), ctrl(tea.KeyDown))
+	e = e.ToggleDone()
+	if e.Lines()[2] != "- [ ] b" {
+		t.Fatalf("got %q", e.Lines()[2])
+	}
+	if e.Lines()[1] != "plain" {
+		t.Fatal("plain line changed")
+	}
+	v := New([]string{"- [ ] a"}, 20, 7).WithVim()
+	v = press(v, ctrl(tea.KeyCtrlX))
+	if v.Lines()[0] != "- [x] a" {
+		t.Fatalf("vim: %q", v.Lines()[0])
+	}
+	v = v.Undo()
+	if v.Lines()[0] != "- [ ] a" {
+		t.Fatalf("undo: %q", v.Lines()[0])
+	}
+	r := New([]string{"- [ ] a"}, 20, 7).WithReading(true)
+	r = press(r, ctrl(tea.KeyCtrlX))
+	if r.Lines()[0] != "- [ ] a" {
+		t.Fatal("reading mode edited")
+	}
+}

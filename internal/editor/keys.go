@@ -46,6 +46,9 @@ func (e Editor) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	if key.String() == "ctrl+y" {
 		return e.Redo(), nil
 	}
+	if key.String() == "ctrl+x" && !e.vimCmdOn {
+		return e.ToggleDone(), nil
+	}
 	if e.vim {
 		return e.vimUpdate(key), nil
 	}
