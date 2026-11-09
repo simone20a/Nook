@@ -28,6 +28,7 @@ const (
 type editorScreen struct {
 	ed           editor.Editor
 	note         store.Note
+	draft        bool // a daily note not yet written to the disk (see openDaily)
 	st           *store.Store
 	mode         edMode
 	promptChoice int
@@ -149,6 +150,16 @@ func (s editorScreen) edShowToast(msg string) editorScreen {
 // saving succeeded; on error the message becomes a toast.
 func (s editorScreen) save() (editorScreen, tea.Cmd, bool) {
 	body := strings.Join(s.ed.Lines(), "\n")
+	if s.draft {
+		n, err := s.saveDraft(body)
+		if err != nil {
+			s = s.edShowToast("error: " + err.Error())
+			return s, edToastTickCmd(), false
+		}
+		s.note, s.draft = *n, false
+		s.ed.Dirty = false
+		return s, nil, true
+	}
 	if err := s.st.Save(s.note.ID, s.note.Title, body); err != nil {
 		s = s.edShowToast("error: " + err.Error())
 		return s, edToastTickCmd(), false

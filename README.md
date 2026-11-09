@@ -12,9 +12,9 @@
 
 - **Write without distractions.** The cursor doesn't move: the text does. Your eye always stays on the same spot.
 - **Real markdown, nicely seen.** Only the focused line shows raw text; the others are rendered with coloured styles and a fixed, muted palette.
-- **A menu for your notes.** A list centred on the selected entry, nested folders, a trash with restore, title filter, rename and on-the-fly creation.
+- **A menu for your notes.** A list centred on the selected entry, nested folders, daily notes, title filter, rename and on-the-fly creation.
 - **Keyboard and mouse.** Every action has a shortcut; click, double click, triple click, drag and wheel/touchpad scrolling work as you would expect.
-- **Nothing hidden.** Notes are ordinary markdown files and folders in `~/.nook`: read them, back them up or sync them with any tool. Deletion is soft: a trashed note can be recovered until you delete it forever.
+- **Nothing hidden.** Notes are ordinary markdown files and folders in `~/.nook`: read them, back them up or sync them with any tool. Deleting is final (Nook always asks first), so keep a backup or put the folder under version control if you want to be able to go back.
 
 ## Installation
 
@@ -34,12 +34,12 @@ With the `Makefile`: `make build`, `make run`, `make test`, `make vet`, `make fm
 ./nook
 ```
 
-On start-up the note list opens; from there you create, open, rename and trash
+On start-up the note list opens; from there you create, open, rename and delete
 notes. Everything lives in `~/.nook` (change it with `notes_dir` in the
 [configuration](#configuration), or `NOOK_DIR`): every note is a
 `<title>.md` file and every folder is a real directory, so you can edit them with
-any other editor too. Deleted notes are not erased but moved to the hidden
-`~/.nook/.trash` folder, from where they can be restored. Only `.md` files and
+any other editor too. Deleting a note or a folder removes it from the disk for good
+(there is no trash). Only `.md` files and
 folders are shown, any other file in the folder is left alone.
 
 Nook uses its dark colour theme by default. Switch to the light one, follow the
@@ -52,14 +52,13 @@ Entries sit in a card at most 60 columns wide, centred horizontally and vertical
 on the selected entry. Each entry takes two lines: the name and, below it, a
 detail (`date · N words` for notes, `N notes` or `empty` for folders). Each entry
 is separated from the next by a `─` line. The title at the top is `NOOK`, with
-the folder path when you go down (`NOOK › projects`), or `TRASH` in the trash view.
+the folder path when you go down (`NOOK › projects`).
 
 ### Folders
 
 Folders sit at the top of the list (name with a `/` suffix, own colour) and can be
-nested. Notes are created in the folder you are currently in. Trashing a folder
-sends its subfolders and all the notes it contains to the trash too; a note
-restored from a trashed folder returns to the root.
+nested. Notes are created in the folder you are currently in. Deleting a folder
+also deletes its subfolders and all the notes they contain, after asking.
 
 | Key | Action |
 |---|---|
@@ -69,13 +68,26 @@ restored from a trashed folder returns to the root.
 | `c` / `ctrl+k` | new folder |
 | `n` / `ctrl+n` | new note (in the current folder) |
 | `r` / `ctrl+r` | rename |
-| `d` / `ctrl+d` | trash (soft delete) |
-| `o` / `ctrl+o` | toggle list ↔ trash |
-| `u` | restore (trash only) |
-| `x` / `ctrl+x` | delete forever (trash only) |
+| `d` | delete the note, or the folder and all it contains, for good (asks first) |
+| `ctrl+d` | open today's [daily note](#daily-notes) |
 | `f` / `ctrl+f` | filter by title |
 | `?` | help |
 | `q` / `ctrl+q` / `ctrl+c` | quit |
+
+### Daily notes
+
+`ctrl+d` in the list opens **today's note**, whatever folder you are in. Daily
+notes live in a `Daily` folder at the root of your notes and are named after the
+date, `YYYY-MM-DD.md` (for example `Daily/2026-11-10.md`), so they sort by day.
+
+- If today's note already exists it opens like any other note.
+- If not, the editor opens on a new page with the date as its title
+  (`# 2026-11-10`). Nothing is on the disk yet: the file, and the `Daily`
+  folder if it is missing, are created the first time you save (`ctrl+s`, `F2`,
+  `:w`, or *Save* when you leave). Leave with *Discard* and nothing is created.
+- The date is the one of the moment you pressed `ctrl+d`. If a file with that
+  name appears in the meantime, Nook does not overwrite it: saving shows an
+  error and your text stays in the editor.
 
 In input popups (`n`, `r`, `f`) `enter` confirms and `esc` cancels. In confirmation
 popups (`d`, `x`) `y` or `enter` confirm, `n` or `esc` cancel.
@@ -355,7 +367,7 @@ the styles it changes — the base is `dark` unless you write `base = "light"`.
 |---|---|
 | `[dim]` | the rendered markdown of every line that is not the Focus Line: `heading1`…`heading6`, `bold`, `italic`, `code`, `strike`, `link`, `image`, `quote`, `quote_bar`, `bullet`, `checkbox`, `fence`, `code_block`, `rule`, `table_border`, `table_head`, `text` |
 | `[full]` | the same keys at full strength; today only `quote_bar` (the bar beside a quote, also on the Focus Line) is drawn with it |
-| `[ui]` | `error`, `toast`, `toast_error`, `banner` (titles and accents), `selected`, `dim_text`, `trash_dim`, `trash_sel`, `folder_dim`, `folder_sel`, `selection` (selected text in the editor) |
+| `[ui]` | `error`, `toast`, `toast_error`, `banner` (titles and accents), `selected`, `dim_text`, `folder_dim`, `folder_sel`, `selection` (selected text in the editor) |
 
 The Focus Line itself shows raw text and the cursor is always drawn in reverse
 video, so they are not themeable.

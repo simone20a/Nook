@@ -1,7 +1,7 @@
 // Package store keeps the notes as plain markdown files: every note is a
 // "<title>.md" file and every folder is a directory, all under one root
-// directory (by default ~/.nook). Deleted notes and folders are moved to
-// the hidden ".trash" directory of the root, so they can be restored.
+// directory (by default ~/.nook). Deleting a note or a folder removes it from
+// the disk for good.
 package store
 
 import (
@@ -26,10 +26,7 @@ var (
 	ErrInvalidName = errors.New("invalid name: it cannot be empty, start with a dot or contain / or \\")
 )
 
-const (
-	noteExt  = ".md"
-	trashDir = ".trash"
-)
+const noteExt = ".md"
 
 // Note is a note as it is stored in the store.
 type Note struct {
@@ -40,8 +37,7 @@ type Note struct {
 	// the file system does not portably keep a creation time.
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	// FolderID is the folder that contains the note; nil = root (and also
-	// every note in the trash).
+	// FolderID is the folder that contains the note; nil = root.
 	FolderID *int64
 }
 
@@ -49,7 +45,7 @@ type Note struct {
 //
 // Notes and folders are identified by int64 ids, which are handed out while
 // scanning the directory and kept in memory: they are stable while the
-// program runs (also across renames and moves to the trash) but are not
+// program runs (also across renames and moves) but are not
 // stored anywhere.
 type Store struct {
 	root   string
@@ -112,7 +108,7 @@ func (s *Store) refresh() error {
 		}
 		rel = filepath.ToSlash(rel)
 		name := d.Name()
-		if strings.HasPrefix(name, ".") && rel != trashDir {
+		if strings.HasPrefix(name, ".") {
 			if d.IsDir() {
 				return filepath.SkipDir
 			}
@@ -189,23 +185,6 @@ func isNoteFile(name string) bool {
 	return strings.EqualFold(filepath.Ext(name), noteExt) && !strings.HasPrefix(name, ".")
 }
 
-func inTrash(rel string) bool {
-	return rel == trashDir || strings.HasPrefix(rel, trashDir+"/")
-}
-
-// logicalPath is where an item lived before it was trashed: the path inside
-// its trash batch. Outside the trash it is the path itself.
-func logicalPath(rel string) string {
-	if !inTrash(rel) {
-		return rel
-	}
-	parts := strings.SplitN(rel, "/", 3)
-	if len(parts) < 3 {
-		return ""
-	}
-	return parts[2]
-}
-
 // dirOf is the directory of rel ("" for the root).
 func dirOf(rel string) string {
 	d := path.Dir(rel)
@@ -255,20 +234,16 @@ func (s *Store) folderRel(id *int64) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if inTrash(rel) {
-		return "", ErrNotFound
-	}
 	if st, err := os.Stat(s.abs(rel)); err != nil || !st.IsDir() {
 		return "", ErrNotFound
 	}
 	return rel, nil
 }
 
-// folderIDOf is the id of the directory that contains rel, nil at the root
-// or in the trash.
+// folderIDOf is the id of the directory that contains rel, nil at the root.
 func (s *Store) folderIDOf(rel string) *int64 {
 	d := dirOf(rel)
-	if d == "" || inTrash(rel) {
+	if d == "" {
 		return nil
 	}
 	id := s.idFor(d)
@@ -330,16 +305,15 @@ func (s *Store) CreateIn(title string, folderID *int64) (*Note, error) {
 	return s.loadNote(rel)
 }
 
-// collect loads the notes outside the trash (deleted == false) or in it,
-// together with the folder they live in (or lived in before being trashed).
-func (s *Store) collect(deleted bool) ([]Note, []string, error) {
+// collect loads all the notes, together with the folder they live in.
+func (s *Store) collect() ([]Note, []string, error) {
 	if err := s.refresh(); err != nil {
 		return nil, nil, err
 	}
 	var notes []Note
 	var dirs []string
 	for rel := range s.byPath {
-		if !isNoteFile(path.Base(rel)) || inTrash(rel) != deleted {
+		if !isNoteFile(path.Base(rel)) {
 			continue
 		}
 		n, err := s.loadNote(rel)
@@ -347,7 +321,7 @@ func (s *Store) collect(deleted bool) ([]Note, []string, error) {
 			continue // vanished or unreadable file: skip it
 		}
 		notes = append(notes, *n)
-		dirs = append(dirs, dirOf(logicalPath(rel)))
+		dirs = append(dirs, dirOf(rel))
 	}
 	idx := make([]int, len(notes))
 	for i := range idx {
@@ -368,29 +342,27 @@ func (s *Store) collect(deleted bool) ([]Note, []string, error) {
 	return sorted, sortedDirs, nil
 }
 
-// List returns all the active notes (includeDeleted == false) or all the
-// trashed ones (true), most recently updated first.
-func (s *Store) List(includeDeleted bool) ([]Note, error) {
-	notes, _, err := s.collect(includeDeleted)
+// List returns all the notes, most recently updated first.
+func (s *Store) List() ([]Note, error) {
+	notes, _, err := s.collect()
 	if notes == nil {
 		notes = []Note{}
 	}
 	return notes, err
 }
 
-// ListIn returns the notes of a folder (nil = root), active or trashed. With
-// recursive true it includes the subfolders too; for a trashed note the
-// folder is the one it came from.
-func (s *Store) ListIn(folderID *int64, includeDeleted, recursive bool) ([]Note, error) {
+// ListIn returns the notes of a folder (nil = root). With recursive true it
+// includes the subfolders too.
+func (s *Store) ListIn(folderID *int64, recursive bool) ([]Note, error) {
 	target := ""
 	if folderID != nil {
 		rel, err := s.pathOf(*folderID)
 		if err != nil {
 			return nil, err
 		}
-		target = logicalPath(rel)
+		target = rel
 	}
-	notes, dirs, err := s.collect(includeDeleted)
+	notes, dirs, err := s.collect()
 	if err != nil {
 		return nil, err
 	}
@@ -409,7 +381,7 @@ func (s *Store) ListIn(folderID *int64, includeDeleted, recursive bool) ([]Note,
 	return out, nil
 }
 
-// Get returns the note with the given id, even if it is in the trash.
+// Get returns the note with the given id.
 func (s *Store) Get(id int64) (*Note, error) {
 	rel, err := s.pathOf(id)
 	if err != nil {
@@ -495,71 +467,8 @@ func writeFileAtomic(target string, data []byte) error {
 	return nil
 }
 
-// trash moves rel into a new batch of the trash, keeping its path inside the batch.
-func (s *Store) trash(rel string) error {
-	if inTrash(rel) {
-		return nil
-	}
-	batch := time.Now().UTC().Format("20060102T150405.000000")
-	for i := 2; ; i++ {
-		if _, err := os.Stat(s.abs(path.Join(trashDir, batch))); errors.Is(err, fs.ErrNotExist) {
-			break
-		}
-		batch = time.Now().UTC().Format("20060102T150405.000000") + "-" + string(rune('0'+i%10))
-	}
-	dest := path.Join(trashDir, batch, rel)
-	if err := os.MkdirAll(s.abs(path.Dir(dest)), 0o755); err != nil {
-		return err
-	}
-	if err := os.Rename(s.abs(rel), s.abs(dest)); err != nil {
-		return err
-	}
-	s.move(rel, dest)
-	return nil
-}
-
-// SoftDelete moves the note to the trash.
-func (s *Store) SoftDelete(id int64) error {
-	rel, err := s.pathOf(id)
-	if err != nil {
-		return err
-	}
-	return s.trash(rel)
-}
-
-// Restore takes a note out of the trash, back to the folder it came from. If
-// that folder is gone or is itself in the trash, the note goes to the root:
-// otherwise it would be active but invisible.
-func (s *Store) Restore(id int64) error {
-	rel, err := s.pathOf(id)
-	if err != nil {
-		return err
-	}
-	if !inTrash(rel) {
-		return nil
-	}
-	logical := logicalPath(rel)
-	dir := dirOf(logical)
-	if dir != "" {
-		if st, err := os.Stat(s.abs(dir)); err != nil || !st.IsDir() {
-			dir = ""
-		}
-	}
-	name := path.Base(logical)
-	if nameTaken(s.abs(dir), name, false, "") {
-		return ErrTitleExists
-	}
-	dest := path.Join(dir, name)
-	if err := os.Rename(s.abs(rel), s.abs(dest)); err != nil {
-		return err
-	}
-	s.move(rel, dest)
-	s.cleanTrash(path.Dir(rel))
-	return nil
-}
-
-// Purge permanently deletes a note.
-func (s *Store) Purge(id int64) error {
+// Delete removes a note from the disk for good.
+func (s *Store) Delete(id int64) error {
 	rel, err := s.pathOf(id)
 	if err != nil {
 		return err
@@ -568,19 +477,5 @@ func (s *Store) Purge(id int64) error {
 		return err
 	}
 	s.forget(rel)
-	if inTrash(rel) {
-		s.cleanTrash(path.Dir(rel))
-	}
 	return nil
-}
-
-// cleanTrash removes the empty directories of the trash, from dir upwards.
-func (s *Store) cleanTrash(dir string) {
-	for inTrash(dir) && dir != trashDir {
-		if os.Remove(s.abs(dir)) != nil {
-			return
-		}
-		s.forget(dir)
-		dir = path.Dir(dir)
-	}
 }

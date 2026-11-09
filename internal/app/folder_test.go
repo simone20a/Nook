@@ -163,9 +163,9 @@ func TestNewNoteGoesIntoCurrentFolder(t *testing.T) {
 	}
 }
 
-// TestDeleteFolderTrashesContent checks that trashing a folder sends its contents
-// to the trash and that the trash view shows it as a note.
-func TestDeleteFolderTrashesContent(t *testing.T) {
+// TestDeleteFolderRemovesContent checks that deleting a folder from the list
+// removes it, with its contents, for good.
+func TestDeleteFolderRemovesContent(t *testing.T) {
 	st := newFolderTestStore(t)
 	folder, err := st.CreateFolder("projects", nil)
 	if err != nil {
@@ -182,8 +182,8 @@ func TestDeleteFolderTrashesContent(t *testing.T) {
 
 	// "d" asks for confirmation, "y" confirms.
 	s, _ = s.updateKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("d")})
-	if s.mode != modeConfirmSoftDelete {
-		t.Fatalf("mode after \"d\" = %v, want modeConfirmSoftDelete", s.mode)
+	if s.mode != modeConfirmDelete {
+		t.Fatalf("mode after \"d\" = %v, want modeConfirmDelete", s.mode)
 	}
 	box := s.boxConfirm()
 	if !strings.Contains(box, "folder") {
@@ -194,14 +194,8 @@ func TestDeleteFolderTrashesContent(t *testing.T) {
 	if len(s.folders) != 0 || len(s.notes) != 0 {
 		t.Fatalf("after deletion: %d folders, %d notes; want 0 and 0", len(s.folders), len(s.notes))
 	}
-
-	// The note that was inside appears in the trash.
-	s, _ = s.updateKey(tea.KeyMsg{Type: tea.KeyRunes, Runes: []rune("o")})
-	if !s.showTrash {
-		t.Fatal("did not switch to the trash")
-	}
-	if len(s.notes) != 1 || s.notes[0].ID != note.ID {
-		t.Fatalf("notes in the trash = %+v, want note %d", s.notes, note.ID)
+	if _, err := st.Get(note.ID); err == nil {
+		t.Fatal("the note inside is still there")
 	}
 }
 
@@ -233,11 +227,6 @@ func TestListTitleBreadcrumb(t *testing.T) {
 	s = s.enterFolder(child.ID)
 	if got := strings.TrimSpace(s.listTitle(60)); got != "NOOK › projects › 2026" {
 		t.Errorf("title in the subfolder = %q, want the full path", got)
-	}
-
-	s.showTrash = true
-	if got := strings.TrimSpace(s.listTitle(60)); got != "TRASH" {
-		t.Errorf("title in the trash = %q, want \"TRASH\"", got)
 	}
 }
 

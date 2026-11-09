@@ -40,15 +40,15 @@ func TestCreateAndList(t *testing.T) {
 		t.Fatalf("ID = %d, want > 0", note.ID)
 	}
 
-	notes, err := st.List(false)
+	notes, err := st.List()
 	if err != nil {
-		t.Fatalf("List(false): %v", err)
+		t.Fatalf("List(): %v", err)
 	}
 	if len(notes) != 1 {
-		t.Fatalf("List(false) has %d items, want 1", len(notes))
+		t.Fatalf("List() has %d items, want 1", len(notes))
 	}
 	if notes[0].Title != "Ideas" {
-		t.Fatalf("List(false)[0].Title = %q, want %q", notes[0].Title, "Ideas")
+		t.Fatalf("List()[0].Title = %q, want %q", notes[0].Title, "Ideas")
 	}
 }
 
@@ -122,56 +122,25 @@ func TestSave(t *testing.T) {
 	}
 }
 
-func TestSoftDeleteRestorePurge(t *testing.T) {
+func TestDelete(t *testing.T) {
 	st := newTestStore(t)
 
 	note, err := st.Create("A")
 	if err != nil {
 		t.Fatalf("Create(\"A\"): %v", err)
 	}
-	id := note.ID
-
-	if err := st.SoftDelete(id); err != nil {
-		t.Fatalf("SoftDelete(%d): %v", id, err)
+	if err := st.Delete(note.ID); err != nil {
+		t.Fatalf("Delete(%d): %v", note.ID, err)
 	}
-	active, err := st.List(false)
-	if err != nil {
-		t.Fatalf("List(false) after SoftDelete: %v", err)
+	notes, err := st.List()
+	if err != nil || len(notes) != 0 {
+		t.Fatalf("List() after Delete = %+v, %v; want none", notes, err)
 	}
-	if len(active) != 0 {
-		t.Fatalf("List(false) after SoftDelete has %d items, want 0", len(active))
+	if _, err := os.Stat(filepath.Join(st.Root(), "A.md")); !os.IsNotExist(err) {
+		t.Fatalf("file still on the disk (err = %v)", err)
 	}
-	deleted, err := st.List(true)
-	if err != nil {
-		t.Fatalf("List(true) after SoftDelete: %v", err)
-	}
-	if len(deleted) != 1 {
-		t.Fatalf("List(true) after SoftDelete has %d items, want 1", len(deleted))
-	}
-
-	if err := st.Restore(id); err != nil {
-		t.Fatalf("Restore(%d): %v", id, err)
-	}
-	active, err = st.List(false)
-	if err != nil {
-		t.Fatalf("List(false) after Restore: %v", err)
-	}
-	if len(active) != 1 {
-		t.Fatalf("List(false) after Restore has %d items, want 1", len(active))
-	}
-
-	if err := st.SoftDelete(id); err != nil {
-		t.Fatalf("second SoftDelete(%d): %v", id, err)
-	}
-	if err := st.Purge(id); err != nil {
-		t.Fatalf("Purge(%d): %v", id, err)
-	}
-	deleted, err = st.List(true)
-	if err != nil {
-		t.Fatalf("List(true) after Purge: %v", err)
-	}
-	if len(deleted) != 0 {
-		t.Fatalf("List(true) after Purge has %d items, want 0", len(deleted))
+	if _, err := os.Stat(filepath.Join(st.Root(), ".trash")); !os.IsNotExist(err) {
+		t.Fatalf("a .trash folder was created (err = %v)", err)
 	}
 }
 
@@ -229,34 +198,6 @@ func TestInvalidNames(t *testing.T) {
 	}
 }
 
-// TestTrashKeepsFiles checks that a trashed note stays on disk under .trash
-// and returns to its folder when restored.
-func TestTrashKeepsFiles(t *testing.T) {
-	st := newTestStore(t)
-
-	folder, _ := st.CreateFolder("work", nil)
-	note, err := st.CreateIn("todo", &folder.ID)
-	if err != nil {
-		t.Fatalf("CreateIn: %v", err)
-	}
-	if err := st.SoftDelete(note.ID); err != nil {
-		t.Fatalf("SoftDelete: %v", err)
-	}
-	if _, err := os.Stat(filepath.Join(st.Root(), "work", "todo.md")); !os.IsNotExist(err) {
-		t.Fatalf("file still in the folder after SoftDelete (err = %v)", err)
-	}
-	if err := st.Restore(note.ID); err != nil {
-		t.Fatalf("Restore: %v", err)
-	}
-	got, err := st.Get(note.ID)
-	if err != nil {
-		t.Fatalf("Get: %v", err)
-	}
-	if got.FolderID == nil || *got.FolderID != folder.ID {
-		t.Fatalf("FolderID after Restore = %v, want %d", got.FolderID, folder.ID)
-	}
-}
-
 // TestReopenKeepsNotes checks that a new store on the same directory sees
 // the notes written by the previous one.
 func TestReopenKeepsNotes(t *testing.T) {
@@ -274,8 +215,33 @@ func TestReopenKeepsNotes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("second Open: %v", err)
 	}
-	notes, err := again.List(false)
+	notes, err := again.List()
 	if err != nil || len(notes) != 1 || notes[0].Title != "kept" || notes[0].Body != "text" {
 		t.Fatalf("List after reopening = %+v, %v; want the note \"kept\"", notes, err)
+	}
+}
+
+func TestCreateAtMakesFolderAndNeverOverwrites(t *testing.T) {
+	st := newTestStore(t)
+	if _, err := st.NoteAt("Daily", "2026-11-10"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("NoteAt on a missing note = %v, want ErrNotFound", err)
+	}
+	if _, err := os.Stat(filepath.Join(st.Root(), "Daily")); !os.IsNotExist(err) {
+		t.Fatal("NoteAt created the folder")
+	}
+	n, err := st.CreateAt("Daily", "2026-11-10", "body")
+	if err != nil || n.Body != "body" || n.Title != "2026-11-10" {
+		t.Fatalf("CreateAt = %+v, %v", n, err)
+	}
+	if _, err := st.CreateAt("Daily", "2026-11-10", "again"); !errors.Is(err, ErrTitleExists) {
+		t.Fatalf("second CreateAt = %v, want ErrTitleExists", err)
+	}
+	got, err := st.NoteAt("Daily", "2026-11-10")
+	if err != nil || got.Body != "body" {
+		t.Fatalf("NoteAt = %+v, %v", got, err)
+	}
+	folders, _ := st.ListFolders(nil)
+	if len(folders) != 1 || folders[0].Name != "Daily" {
+		t.Fatalf("folders = %+v", folders)
 	}
 }

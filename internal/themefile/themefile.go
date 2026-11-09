@@ -68,7 +68,7 @@ var StyleNames = map[string]markdown.Style{
 // UINames are the interface styles a theme defines.
 var UINames = []string{
 	"error", "toast", "toast_error", "banner", "selected", "dim_text",
-	"trash_dim", "trash_sel", "folder_dim", "folder_sel", "selection",
+	"folder_dim", "folder_sel", "selection",
 }
 
 // BuiltinNames are the themes that ship with Nook.
@@ -164,6 +164,9 @@ func Parse(src string, base func(name string) (Theme, bool)) (Theme, error) {
 			return ok
 		}},
 		{"ui", func(k string, sp Spec) bool {
+			if k == "trash_dim" || k == "trash_sel" {
+				return true // from when Nook had a trash: accepted and ignored
+			}
 			for _, n := range UINames {
 				if n == k {
 					t.UI[k] = sp

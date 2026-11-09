@@ -37,14 +37,13 @@ func TestImportLegacyDB(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ImportLegacyDB: %v", err)
 	}
-	if n != 3 {
-		t.Fatalf("imported %d notes, want 3", n)
+	if n != 2 {
+		t.Fatalf("imported %d notes, want 2 (the deleted one is skipped)", n)
 	}
 
 	for rel, want := range map[string]string{
-		"root note.md":                 "hello",
-		"projects/nook/deep-note.md":   "deep",
-		".trash/legacy-import/gone.md": "bye",
+		"root note.md":               "hello",
+		"projects/nook/deep-note.md": "deep",
 	} {
 		data, err := os.ReadFile(filepath.Join(root, filepath.FromSlash(rel)))
 		if err != nil || string(data) != want {
@@ -56,10 +55,7 @@ func TestImportLegacyDB(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Open: %v", err)
 	}
-	if active, _ := st.List(false); len(active) != 2 {
-		t.Errorf("active notes = %d, want 2", len(active))
-	}
-	if trashed, _ := st.List(true); len(trashed) != 1 {
-		t.Errorf("trashed notes = %d, want 1", len(trashed))
+	if notes, _ := st.List(); len(notes) != 2 {
+		t.Errorf("notes = %d, want 2", len(notes))
 	}
 }

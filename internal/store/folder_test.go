@@ -2,6 +2,8 @@ package store
 
 import (
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -109,7 +111,7 @@ func TestNotesInFolders(t *testing.T) {
 		t.Fatalf("creating note at the root: %v", err)
 	}
 
-	inFolder, err := st.ListIn(&folder.ID, false, false)
+	inFolder, err := st.ListIn(&folder.ID, false)
 	if err != nil {
 		t.Fatalf("listing folder: %v", err)
 	}
@@ -120,7 +122,7 @@ func TestNotesInFolders(t *testing.T) {
 		t.Errorf("FolderID = %v, want %d", inFolder[0].FolderID, folder.ID)
 	}
 
-	atRoot, err := st.ListIn(nil, false, false)
+	atRoot, err := st.ListIn(nil, false)
 	if err != nil {
 		t.Fatalf("listing root: %v", err)
 	}
@@ -136,18 +138,18 @@ func TestNotesInFolders(t *testing.T) {
 	}
 
 	// List remains the complete list, from any folder.
-	all, err := st.List(false)
+	all, err := st.List()
 	if err != nil {
 		t.Fatalf("List: %v", err)
 	}
 	if len(all) != 2 {
-		t.Errorf("List(false) = %d notes, want 2", len(all))
+		t.Errorf("List() = %d notes, want 2", len(all))
 	}
 }
 
-// TestSoftDeleteFolder checks that trashing a folder also sends to the trash
-// its subfolders and the notes it contains.
-func TestSoftDeleteFolder(t *testing.T) {
+// TestDeleteFolder checks that deleting a folder removes from the disk its
+// subfolders and the notes it contains.
+func TestDeleteFolder(t *testing.T) {
 	st := newFolderTestStore(t)
 
 	parent, err := st.CreateFolder("parent", nil)
@@ -163,38 +165,21 @@ func TestSoftDeleteFolder(t *testing.T) {
 		t.Fatalf("creating note: %v", err)
 	}
 
-	if err := st.SoftDeleteFolder(parent.ID); err != nil {
-		t.Fatalf("SoftDeleteFolder: %v", err)
+	if err := st.DeleteFolder(parent.ID); err != nil {
+		t.Fatalf("DeleteFolder: %v", err)
 	}
 
 	if roots, err := st.ListFolders(nil); err != nil || len(roots) != 0 {
-		t.Fatalf("active folders = %+v, %v; want none", roots, err)
+		t.Fatalf("folders = %+v, %v; want none", roots, err)
 	}
-	if notes, err := st.ListIn(nil, false, true); err != nil || len(notes) != 0 {
-		t.Fatalf("active notes = %+v, %v; want none", notes, err)
+	if notes, err := st.ListIn(nil, true); err != nil || len(notes) != 0 {
+		t.Fatalf("notes = %+v, %v; want none", notes, err)
 	}
-	trash, err := st.ListIn(nil, true, true)
-	if err != nil {
-		t.Fatalf("listing trash: %v", err)
+	if _, err := st.Get(noteInChild.ID); err == nil {
+		t.Fatal("note still reachable after deleting its folder")
 	}
-	if len(trash) != 1 || trash[0].ID != noteInChild.ID {
-		t.Fatalf("notes in the trash = %+v, want note %d", trash, noteInChild.ID)
-	}
-
-	// Restoring the note brings it back to the root: its folder is in the trash,
-	// so otherwise it would be active but invisible.
-	if err := st.Restore(noteInChild.ID); err != nil {
-		t.Fatalf("Restore: %v", err)
-	}
-	n, err := st.Get(noteInChild.ID)
-	if err != nil {
-		t.Fatalf("Get: %v", err)
-	}
-	if n.FolderID != nil {
-		t.Errorf("FolderID after restoring = %v, want nil (root)", n.FolderID)
-	}
-	if notes, err := st.ListIn(nil, false, false); err != nil || len(notes) != 1 {
-		t.Errorf("active notes at the root = %+v, %v; want the restored note", notes, err)
+	if _, err := os.Stat(filepath.Join(st.Root(), "parent")); !os.IsNotExist(err) {
+		t.Fatalf("folder still on the disk (err = %v)", err)
 	}
 }
 

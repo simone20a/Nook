@@ -112,14 +112,18 @@ func (s *Store) RenameFolder(id int64, name string) error {
 	return nil
 }
 
-// SoftDeleteFolder moves to the trash the folder, its subfolders and all the
-// notes they contain.
-func (s *Store) SoftDeleteFolder(id int64) error {
+// DeleteFolder removes from the disk, for good, the folder, its subfolders
+// and all the notes they contain.
+func (s *Store) DeleteFolder(id int64) error {
 	rel, err := s.folderRel(&id)
 	if err != nil || rel == "" {
 		return ErrNotFound
 	}
-	return s.trash(rel)
+	if err := os.RemoveAll(s.abs(rel)); err != nil {
+		return err
+	}
+	s.forget(rel)
+	return nil
 }
 
 // FolderPath returns the chain of folders from the root to the folder id,

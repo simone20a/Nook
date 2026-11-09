@@ -1,7 +1,7 @@
 // Package theme collects the application's shared palette: the full styles
 // used for highlighted text, the dimmed ones used for lines that are not in
 // focus, plus the utility styles (reverse, error, toast, banner, selection,
-// dimmed text, folders and trash).
+// dimmed text and folders).
 //
 // The colours come from a theme file (see package themefile and the files in
 // themes/): dark and light are built in, and the user can write more. The
@@ -39,10 +39,6 @@ var (
 	Selected lipgloss.Style
 	// DimText is the style of dimmed text: the dimming is in the colour only.
 	DimText lipgloss.Style
-	// TrashDim is the style of unselected notes in the trash.
-	TrashDim lipgloss.Style
-	// TrashSel is the style of the selected trash note.
-	TrashSel lipgloss.Style
 	// FolderDim is the style of unselected folders: a muted tint, so the
 	// selected folder stands out even without underlining.
 	FolderDim lipgloss.Style
@@ -85,8 +81,6 @@ func Use(t themefile.Theme) {
 	BannerAcc = ui("banner")
 	Selected = ui("selected")
 	DimText = ui("dim_text")
-	TrashDim = ui("trash_dim")
-	TrashSel = ui("trash_sel")
 	FolderDim = ui("folder_dim")
 	FolderSel = ui("folder_sel")
 	Selection = ui("selection")

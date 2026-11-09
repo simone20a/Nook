@@ -66,7 +66,6 @@ func ImportLegacyDB(dbPath, root string) (int, error) {
 	}
 	defer rows.Close()
 
-	batch := path.Join(trashDir, "legacy-import")
 	n := 0
 	for rows.Next() {
 		var (
@@ -82,7 +81,7 @@ func ImportLegacyDB(dbPath, root string) (int, error) {
 			dir = dirOf(folder.Int64, 0)
 		}
 		if deleted.Valid {
-			dir = path.Join(batch, dir)
+			continue // deleted in the old version: not imported
 		}
 		abs := filepath.Join(root, filepath.FromSlash(dir))
 		if err := os.MkdirAll(abs, 0o755); err != nil {

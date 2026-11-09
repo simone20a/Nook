@@ -32,6 +32,7 @@ type listAction int
 const (
 	listNone listAction = iota
 	listOpen
+	listDaily
 	listQuit
 )
 
@@ -199,6 +200,9 @@ func (m Model) applyListAction(cmd tea.Cmd) (Model, tea.Cmd, bool) {
 	case listQuit:
 		m.list.action = listNone
 		return m, nil, true
+	case listDaily:
+		m.list.action = listNone
+		return m.openDaily(cmd)
 	case listOpen:
 		id := m.list.actionID
 		m.list.action = listNone

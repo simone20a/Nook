@@ -20,8 +20,7 @@ const (
 	modeInputRename
 	modeInputFilter
 	modeInputNewFolder
-	modeConfirmSoftDelete
-	modeConfirmPurge
+	modeConfirmDelete
 )
 
 // entryKind distinguishes the two kinds of list entries.
@@ -46,12 +45,11 @@ type listEntry struct {
 // rows centred on the selection, footer, popups for input, filter and confirmations,
 // overlaid toasts.
 type listScreen struct {
-	st        *store.Store
-	notes     []store.Note
-	folders   []store.Folder
-	folderID  *int64
-	path      []store.Folder
-	showTrash bool
+	st       *store.Store
+	notes    []store.Note
+	folders  []store.Folder
+	folderID *int64
+	path     []store.Folder
 	// folderNotes is the number of notes contained in each folder shown.
 	folderNotes map[int64]int
 	selected    int
@@ -112,22 +110,6 @@ func (s listScreen) showToast(msg string) listScreen {
 // load reloads from the store the folders and notes of the current view and
 // applies the current filter to them, case-insensitively.
 func (s *listScreen) load() {
-	if s.showTrash {
-		// The trash shows all deleted notes, from any folder.
-		s.folders = nil
-		s.folderNotes = nil
-		notes, err := s.st.List(true)
-		if err != nil {
-			s.notes = nil
-			s.selected = 0
-			*s = s.showToast("error: " + err.Error())
-			return
-		}
-		s.notes = filterNotes(notes, s.filter)
-		s.clampSelected()
-		return
-	}
-
 	folders, err := s.st.ListFolders(s.folderID)
 	if err != nil {
 		s.folders, s.notes = nil, nil
@@ -135,7 +117,7 @@ func (s *listScreen) load() {
 		*s = s.showToast("error: " + err.Error())
 		return
 	}
-	notes, err := s.st.ListIn(s.folderID, false, false)
+	notes, err := s.st.ListIn(s.folderID, false)
 	if err != nil {
 		s.folders, s.notes = nil, nil
 		s.selected = 0
@@ -300,7 +282,7 @@ func (s listScreen) enterFolder(id int64) listScreen {
 // goUp goes up to the folder that contains the current one; at the root it does
 // nothing.
 func (s listScreen) goUp() listScreen {
-	if s.showTrash || len(s.path) == 0 {
+	if len(s.path) == 0 {
 		return s
 	}
 	s.path = s.path[:len(s.path)-1]
@@ -365,7 +347,7 @@ func (s listScreen) updateKey(keyMsg tea.KeyMsg) (listScreen, tea.Cmd) {
 			return s, cmd
 		}
 
-	case modeConfirmSoftDelete, modeConfirmPurge:
+	case modeConfirmDelete:
 		switch key {
 		case "n":
 			fallthrough
@@ -418,9 +400,6 @@ func (s listScreen) updateKey(keyMsg tea.KeyMsg) (listScreen, tea.Cmd) {
 	case "n":
 		fallthrough
 	case "ctrl+n":
-		if s.showTrash {
-			return s, nil
-		}
 		s.mode = modeInputNew
 		s.input.Placeholder = "Title"
 		s.input.SetValue("")
@@ -429,9 +408,6 @@ func (s listScreen) updateKey(keyMsg tea.KeyMsg) (listScreen, tea.Cmd) {
 	case "c":
 		fallthrough
 	case "ctrl+k":
-		if s.showTrash {
-			return s, nil
-		}
 		s.mode = modeInputNewFolder
 		s.input.Placeholder = "Folder"
 		s.input.SetValue("")
@@ -441,7 +417,7 @@ func (s listScreen) updateKey(keyMsg tea.KeyMsg) (listScreen, tea.Cmd) {
 		fallthrough
 	case "ctrl+r":
 		e, ok := s.currentEntry()
-		if !ok || s.showTrash {
+		if !ok {
 			return s, nil
 		}
 		s.mode = modeInputRename
@@ -456,49 +432,16 @@ func (s listScreen) updateKey(keyMsg tea.KeyMsg) (listScreen, tea.Cmd) {
 		cmd := s.input.Focus()
 		return s, cmd
 	case "d":
-		fallthrough
-	case "ctrl+d":
-		if s.showTrash {
-			return s, nil
-		}
 		if _, ok := s.currentEntry(); !ok {
 			return s, nil
 		}
-		s.mode = modeConfirmSoftDelete
+		s.mode = modeConfirmDelete
 		return s, nil
-	case "o":
-		fallthrough
-	case "ctrl+o":
-		s.showTrash = !s.showTrash
-		s.selected = 0
-		s.folderID = nil
-		s.path = nil
-		s.input.Blur()
-		return s.reload()
-	case "x":
-		fallthrough
-	case "ctrl+x":
-		if !s.showTrash {
-			return s, nil
-		}
-		if _, ok := s.current(); !ok {
-			return s, nil
-		}
-		s.mode = modeConfirmPurge
+	case "ctrl+d":
+		// Today's daily note: the screen opens it, or a draft if it does
+		// not exist yet (see openDaily).
+		s.action = listDaily
 		return s, nil
-	case "u":
-		if !s.showTrash {
-			return s, nil
-		}
-		n, ok := s.current()
-		if !ok {
-			return s, nil
-		}
-		if err := s.st.Restore(n.ID); err != nil {
-			return s.showToast("error: " + err.Error()), listToastTickCmd()
-		}
-		s = s.showToast("note restored")
-		return s.reload()
 	case "f":
 		fallthrough
 	case "ctrl+f":
@@ -691,9 +634,9 @@ func (s listScreen) applyInput() (listScreen, tea.Cmd) {
 	return s.reload()
 }
 
-// applyConfirm performs the destructive operation confirmed by the popup.
+// applyConfirm performs the deletion confirmed by the popup: the note, or the
+// folder with everything in it, is removed from the disk for good.
 func (s listScreen) applyConfirm() (listScreen, tea.Cmd) {
-	purge := s.mode == modeConfirmPurge
 	s.mode = modeNormal
 
 	e, ok := s.currentEntry()
@@ -702,24 +645,19 @@ func (s listScreen) applyConfirm() (listScreen, tea.Cmd) {
 	}
 
 	var err error
-	switch {
-	case purge:
-		err = s.st.Purge(e.id)
-	case e.kind == entryFolder:
-		err = s.st.SoftDeleteFolder(e.id)
-	default:
-		err = s.st.SoftDelete(e.id)
+	if e.kind == entryFolder {
+		err = s.st.DeleteFolder(e.id)
+	} else {
+		err = s.st.Delete(e.id)
 	}
 
 	switch {
 	case err != nil:
 		s = s.showToast("error: " + err.Error())
-	case purge:
-		s = s.showToast("note deleted")
 	case e.kind == entryFolder:
-		s = s.showToast("folder moved to the trash")
+		s = s.showToast("folder deleted")
 	default:
-		s = s.showToast("note moved to the trash")
+		s = s.showToast("note deleted")
 	}
 	return s.reload()
 }
@@ -735,22 +673,18 @@ func listContentH(ch, titleH int) int {
 }
 
 // listTitle is the title row of the list: "NOOK" with the path of the
-// folders descended into, or "TRASH" in the trash view. It is
+// folders descended into. It is
 // centred over cw columns and rendered with theme.BannerAcc.
 func (s listScreen) listTitle(cw int) string {
 	parts := []string{"NOOK"}
-	if s.showTrash {
-		parts = []string{"TRASH"}
-	} else {
-		for _, f := range s.path {
-			parts = append(parts, f.Name)
-		}
+	for _, f := range s.path {
+		parts = append(parts, f.Name)
 	}
 	return centerStyled(strings.Join(parts, " › "), cw, theme.BannerAcc)
 }
 
 // listFooterHint is the text of the list footer.
-const listFooterHint = "enter open · n new note · c new folder · ? help"
+const listFooterHint = "enter open · n new note · c new folder · ctrl+d today · ? help"
 
 // listFooter renders the list footer: a single row truncated to cw columns,
 // in dimmed colour without Faint.
@@ -813,17 +747,12 @@ func listSeparator(cardW int) string {
 }
 
 // titleLine renders the title row of entry idx, centred in the card: highlighted
-// for the selected one, dimmed for the others, with the trash styles
-// in the trash view. Folders have a style of their own, so they stand out
+// for the selected one, dimmed for the others. Folders have a style of their own, so they stand out
 // from notes at a glance.
 func (s listScreen) titleLine(idx, cardW int, entries []listEntry) string {
 	e := entries[idx]
 	st := theme.DimText
 	switch {
-	case s.showTrash && idx == s.selected:
-		st = theme.TrashSel
-	case s.showTrash:
-		st = theme.TrashDim
 	case e.kind == entryFolder && idx == s.selected:
 		st = theme.FolderSel
 	case e.kind == entryFolder:
@@ -838,11 +767,7 @@ func (s listScreen) titleLine(idx, cardW int, entries []listEntry) string {
 // of notes for folders, date and words for notes. It is dimmed on all
 // entries, whether their title is highlighted or in a low tone.
 func (s listScreen) detailLine(idx, cardW int, entries []listEntry) string {
-	st := theme.DimText
-	if s.showTrash {
-		st = theme.TrashDim
-	}
-	return cardText(entries[idx].detail, st, cardW)
+	return cardText(entries[idx].detail, theme.DimText, cardW)
 }
 
 // listPlane builds the plane of rows of the list: every entry (folder or
@@ -921,12 +846,9 @@ func (s listScreen) boxInput() string {
 
 // boxConfirm is the content of the confirmation popup of the destructive operation.
 func (s listScreen) boxConfirm() string {
-	question := "Move the note to the trash? (y/n)"
+	question := "Delete the note for good? (y/n)"
 	if e, ok := s.currentEntry(); ok && e.kind == entryFolder {
-		question = "Move the folder and all its contents to the trash? (y/n)"
-	}
-	if s.mode == modeConfirmPurge {
-		question = "Delete permanently? (y/n)"
+		question = "Delete the folder and all its contents for good? (y/n)"
 	}
 	return theme.DimText.Render(question)
 }
@@ -943,9 +865,6 @@ func (s listScreen) View() string {
 	var rows []string
 	if s.entryCount() == 0 {
 		msg := "No notes — press n to create one"
-		if s.showTrash {
-			msg = "Trash is empty"
-		}
 		rows = make([]string, listH)
 		rows[listH/2] = centerStyled(msg, cw, theme.DimText)
 	} else {
@@ -976,7 +895,7 @@ func (s listScreen) View() string {
 	switch s.mode {
 	case modeInputNew, modeInputRename, modeInputFilter, modeInputNewFolder:
 		content = centerPopup(content, s.width, s.height, s.boxInput())
-	case modeConfirmSoftDelete, modeConfirmPurge:
+	case modeConfirmDelete:
 		content = centerPopup(content, s.width, s.height, s.boxConfirm())
 	}
 
