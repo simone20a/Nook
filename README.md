@@ -284,6 +284,7 @@ quickest way is to let Nook write it for you, with every setting documented:
 ```sh
 nook config init     # writes ~/.config/Nook/config.toml (never overwrites)
 nook config path     # prints where Nook looks for it
+nook config show     # prints the settings in effect (and any NOOK_* variable that overrides them)
 ```
 
 The file is a flat list of `key = value` lines; `#` starts a comment. Every

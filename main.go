@@ -18,6 +18,7 @@ const usage = `Usage:
   nook                      open the notes
   nook config init          write a documented ~/.config/Nook/config.toml
   nook config path          print the path of the configuration file
+  nook config show          print the settings in effect and where they come from
   nook theme <dark|light>   print a built-in theme, as a starting point for your own
   nook help                 show this text
 `
@@ -88,6 +89,26 @@ func command(args []string) int {
 			return 1
 		}
 		fmt.Println(cfg.File)
+	case args[0] == "config" && len(args) == 2 && args[1] == "show":
+		cfg, err := config.Load()
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "nook:", err)
+			return 1
+		}
+		found := "found"
+		if _, err := os.Stat(cfg.File); err != nil {
+			found = "not found: defaults apply"
+		}
+		fmt.Printf("file:             %s (%s)\n", cfg.File, found)
+		fmt.Printf("theme:            %s\n", cfg.Theme)
+		fmt.Printf("vim:              %v\n", cfg.Vim)
+		fmt.Printf("start_in_reading: %v\n", cfg.Reading)
+		fmt.Printf("notes_dir:        %q\n", cfg.NotesDir)
+		for _, k := range []string{"NOOK_CONFIG", "NOOK_THEME", "NOOK_VIM", "NOOK_READING", "NOOK_DIR"} {
+			if v := os.Getenv(k); v != "" {
+				fmt.Printf("%s=%s is set and wins over the file\n", k, v)
+			}
+		}
 	case args[0] == "help" || args[0] == "-h" || args[0] == "--help":
 		fmt.Print(usage)
 	default:
