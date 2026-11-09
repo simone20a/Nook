@@ -1,6 +1,7 @@
 package app
 
 import (
+	"nook/internal/markdown"
 	"os"
 	"strings"
 	"time"
@@ -368,6 +369,23 @@ func (s editorScreen) edUpdateMouse(m tea.MouseMsg) (editorScreen, tea.Cmd) {
 
 	if m.Action != tea.MouseActionPress || m.Button != tea.MouseButtonLeft {
 		return s, nil
+	}
+	// A click on a rendered link opens it: in reading mode, where a plain
+	// click does nothing else, and with ctrl held while editing.
+	if s.ed.Reading() || m.Ctrl {
+		if line, col, ok := s.edHit(m.X, m.Y); ok {
+			raw := []rune(s.ed.LineAt(line))
+			col = min(col, len(raw))
+			if url, ok := markdown.LinkAt(string(raw), len(string(raw[:col]))); ok {
+				if err := openURL(url); err != nil {
+					s = s.edShowToast("error: " + err.Error())
+				} else {
+					s = s.edShowToast("opening " + url)
+				}
+				s.dragging = false
+				return s, edToastTickCmd()
+			}
+		}
 	}
 	now := time.Now()
 	clicks := edClickCount(s.lastClick, now, m.X, m.Y)

@@ -170,6 +170,8 @@ Tables narrow their columns and wrap inside them. The note is read only.
   `ctrl+u` `ctrl+d` (half page), `home` / `g` (top), `end` / `G` (bottom) and the wheel.
 - `ctrl+s`, `ctrl+q`, `ctrl+c` work as usual; typing, deleting, pasting, the
   palette, undo/redo and vim operators are disabled.
+- A click on a link opens it in the browser (`http`, `https` and `mailto` only).
+  While editing, `ctrl`+click does the same on a rendered link.
 - A drag selects text (copy with `ctrl+shift+c`); a plain click moves nothing.
 - `ctrl+p` again goes back to editing, with the cursor at the start of the row
   you reached (or where it was, if you did not scroll).

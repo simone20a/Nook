@@ -339,3 +339,21 @@ func PrefixWidth(raw string) int {
 	}
 	return 0
 }
+
+var linkURLRe = regexp.MustCompile(`(!?)\[([^\]]*)\]\(([^)]*)\)`)
+
+// LinkAt returns the URL of the markdown link [text](url) that covers the byte
+// offset off of the raw line, if any. Images are not links.
+func LinkAt(raw string, off int) (string, bool) {
+	for _, m := range linkURLRe.FindAllStringSubmatchIndex(raw, -1) {
+		if off < m[0] || off > m[1] {
+			continue
+		}
+		if m[3] > m[2] { // "!" present: an image
+			return "", false
+		}
+		url := strings.TrimSpace(raw[m[6]:m[7]])
+		return url, url != ""
+	}
+	return "", false
+}

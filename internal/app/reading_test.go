@@ -46,3 +46,25 @@ func TestReadingClickMovesNothing(t *testing.T) {
 		t.Fatalf("cursor moved to %d:%d", s.ed.CursorRow(), s.ed.CursorCol1())
 	}
 }
+
+func TestReadingClickOpensLink(t *testing.T) {
+	st := newKeysTestStore(t)
+	c, _ := st.Create("n")
+	_ = st.Save(c.ID, "n", "intro\n[site](https://example.com) here\nend")
+	note, _ := st.Get(c.ID)
+	var got string
+	old := openURL
+	openURL = func(u string) error { got = u; return nil }
+	defer func() { openURL = old }()
+
+	s := newEditorScreen(st, note, 60, 12)
+	s, _ = s.Update(tea.KeyMsg{Type: tea.KeyCtrlP})
+	found := false
+	for y := 0; y < 12 && !found; y++ {
+		s, _ = s.Update(tea.MouseMsg{Action: tea.MouseActionPress, Button: tea.MouseButtonLeft, X: 3, Y: y})
+		found = got != ""
+	}
+	if got != "https://example.com" {
+		t.Fatalf("opened %q", got)
+	}
+}

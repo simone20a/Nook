@@ -337,3 +337,16 @@ func TestHeadingStyle(t *testing.T) {
 		}
 	}
 }
+
+func TestLinkAt(t *testing.T) {
+	raw := "a [x](https://e.com) ![i](p.png)"
+	if u, ok := LinkAt(raw, 4); !ok || u != "https://e.com" {
+		t.Fatalf("got %q %v", u, ok)
+	}
+	if _, ok := LinkAt(raw, 0); ok {
+		t.Fatal("link outside")
+	}
+	if _, ok := LinkAt(raw, 24); ok {
+		t.Fatal("image is not a link")
+	}
+}

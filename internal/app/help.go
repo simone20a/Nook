@@ -73,6 +73,7 @@ var helpPages = []helpPage{
 		hk("ctrl+← / ctrl+→", "previous / next word (also alt)"),
 		hh("Reading"),
 		hk("ctrl+p", "read-only view of the whole note, rendered (again to edit)"),
+		hk("click / ctrl+click", "open a link (click in reading mode, ctrl+click while editing)"),
 		hh("Selecting"),
 		hk("shift + arrows", "extend the selection"),
 		hk("shift+home / shift+end", "select to start / end of line"),
