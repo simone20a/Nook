@@ -9,8 +9,8 @@ import (
 	ansi "github.com/charmbracelet/x/ansi"
 	"github.com/muesli/termenv"
 
-	"nook/internal/markdown"
-	"nook/internal/theme"
+	"github.com/Unisay/Nook/markdown"
+	"github.com/Unisay/Nook/theme"
 )
 
 // TestFocusRowCentered checks that the cursor's line is in the middle of the screen.

@@ -1,16 +1,16 @@
 package app
 
 import (
-	"nook/internal/markdown"
+	"github.com/Unisay/Nook/markdown"
 	"os"
 	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"nook/internal/editor"
-	"nook/internal/store"
-	"nook/internal/theme"
+	"github.com/Unisay/Nook/editor"
+	"github.com/Unisay/Nook/internal/store"
+	"github.com/Unisay/Nook/theme"
 )
 
 // edMode is the mode of the editor screen.

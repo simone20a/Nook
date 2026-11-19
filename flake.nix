@@ -35,7 +35,7 @@
                     theme = "sample";
                   };
                   themes.sample.ui.banner = "fg=#abcdef bold";
-                  themes.fromFile = ./internal/themefile/themes/light.toml;
+                  themes.fromFile = ./themefile/themes/light.toml;
                 };
               }
             ];
@@ -57,7 +57,10 @@
           version = self.shortRev or self.dirtyShortRev or "dev";
           src = self;
 
-          vendorHash = "sha256-qnLirTqfMjm0ilgxHaF0GlMsZucIgVqectCVCeIQN4k=";
+          vendorHash = "sha256-GA0bnoXj/af54MMem3/6yleecvCdZSkM9TGsa/cJMdw=";
+          postInstall = ''
+            mv "$out/bin/Nook" "$out/bin/nook"
+          '';
 
           ldflags = [
             "-s"

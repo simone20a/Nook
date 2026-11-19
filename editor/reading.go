@@ -6,7 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"nook/internal/markdown"
+	"github.com/Unisay/Nook/markdown"
 )
 
 // --- Reading mode ---

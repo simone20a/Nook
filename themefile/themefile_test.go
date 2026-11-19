@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"nook/internal/markdown"
+	"github.com/Unisay/Nook/markdown"
 )
 
 func TestBuiltinsAreComplete(t *testing.T) {

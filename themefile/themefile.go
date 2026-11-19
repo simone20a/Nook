@@ -13,8 +13,8 @@ import (
 	"strconv"
 	"strings"
 
-	"nook/internal/ini"
-	"nook/internal/markdown"
+	"github.com/Unisay/Nook/ini"
+	"github.com/Unisay/Nook/markdown"
 )
 
 //go:embed themes/*.toml

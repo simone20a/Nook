@@ -6,7 +6,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	ansi "github.com/charmbracelet/x/ansi"
 
-	"nook/internal/theme"
+	"github.com/Unisay/Nook/theme"
 )
 
 // Border characters of the overlaid boxes: corners and sides.

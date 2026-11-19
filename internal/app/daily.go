@@ -6,7 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"nook/internal/store"
+	"github.com/Unisay/Nook/internal/store"
 )
 
 const (

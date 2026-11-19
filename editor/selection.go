@@ -5,8 +5,8 @@ import (
 
 	lipgloss "github.com/charmbracelet/lipgloss"
 
-	"nook/internal/markdown"
-	"nook/internal/theme"
+	"github.com/Unisay/Nook/markdown"
+	"github.com/Unisay/Nook/theme"
 )
 
 // selectionOnLine returns the range of runes selected on line line,

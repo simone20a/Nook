@@ -7,7 +7,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	ansi "github.com/charmbracelet/x/ansi"
 
-	"nook/internal/store"
+	"github.com/Unisay/Nook/internal/store"
 )
 
 // appName is the name of the application, used in the window title when

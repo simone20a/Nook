@@ -5,8 +5,8 @@ import (
 
 	ansi "github.com/charmbracelet/x/ansi"
 
-	"nook/internal/markdown"
-	"nook/internal/theme"
+	"github.com/Unisay/Nook/markdown"
+	"github.com/Unisay/Nook/theme"
 )
 
 // View draws the editor: one row for each screen row, separated by "\n".

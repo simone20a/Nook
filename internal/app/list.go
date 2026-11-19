@@ -9,8 +9,8 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 
-	"nook/internal/store"
-	"nook/internal/theme"
+	"github.com/Unisay/Nook/internal/store"
+	"github.com/Unisay/Nook/theme"
 )
 
 // List screen modes.
