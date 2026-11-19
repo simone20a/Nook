@@ -19,6 +19,7 @@ const usage = `Usage:
   nook config init          write a documented ~/.config/Nook/config.toml
   nook config path          print the path of the configuration file
   nook config show          print the settings in effect and where they come from
+  nook theme check <file>   validate a custom theme file
   nook theme <dark|light>   print a built-in theme, as a starting point for your own
   nook help                 show this text
 `
@@ -68,6 +69,15 @@ func main() {
 // command runs a subcommand and returns the exit status.
 func command(args []string) int {
 	switch {
+	case len(args) == 3 && args[0] == "theme" && args[1] == "check":
+		path, err := filepath.Abs(args[2])
+		if err == nil {
+			_, err = themefile.Load(path, "")
+		}
+		if err != nil {
+			fmt.Fprintln(os.Stderr, "nook:", err)
+			return 1
+		}
 	case args[0] == "theme" && len(args) == 2:
 		src, ok := themefile.Source(args[1])
 		if !ok {

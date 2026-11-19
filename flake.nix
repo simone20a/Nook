@@ -14,6 +14,43 @@
       forAllSystems = f: nixpkgs.lib.genAttrs systems (system: f nixpkgs.legacyPackages.${system});
     in
     {
+      homeManagerModules.default = import ./home-module.nix self;
+      homeModules.default = self.homeManagerModules.default;
+
+      checks = forAllSystems (
+        pkgs:
+        let
+          inherit (pkgs) lib;
+          sample = lib.evalModules {
+            specialArgs = { inherit pkgs; };
+            modules = [
+              self.homeModules.default
+              {
+                options.home.packages = lib.mkOption { type = lib.types.listOf lib.types.package; };
+                options.xdg.configFile = lib.mkOption { type = lib.types.attrsOf lib.types.attrs; };
+                config.programs.nook = {
+                  enable = true;
+                  settings = {
+                    vim = true;
+                    theme = "sample";
+                  };
+                  themes.sample.ui.banner = "fg=#abcdef bold";
+                  themes.fromFile = ./internal/themefile/themes/light.toml;
+                };
+              }
+            ];
+          };
+        in
+        {
+          home-module = pkgs.linkFarm "nook-module-example" (
+            lib.mapAttrsToList (name: file: {
+              inherit name;
+              path = file.source;
+            }) sample.config.xdg.configFile
+          );
+        }
+      );
+
       packages = forAllSystems (pkgs: {
         nook = pkgs.buildGoModule {
           pname = "nook";

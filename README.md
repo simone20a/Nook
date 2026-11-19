@@ -409,3 +409,32 @@ The basic structure of Nook has been created **exclusively with the coding agent
 ## License
 
 Nook is released under the [MIT License](LICENSE).
+
+### Home Manager
+
+With this fork declared as a flake input named `nook`, import its module in
+your home configuration (`inputs` must be in scope).
+
+```nix
+{
+  imports = [ inputs.nook.homeManagerModules.default ];
+  programs.nook = {
+    enable = true;
+    settings = {
+      vim = true;
+      theme = "dusk";
+      notes_dir = "~/Notes";
+    };
+    themes.dusk = {
+      base = "dark";
+      dim.heading1 = "fg=#a89984 bold";
+    };
+    # themes.paper = ./paper.toml;
+  };
+}
+```
+
+The module installs `programs.nook.package` (the fork's host package by
+default) and validates the config and each declared theme during the build.
+Home Manager links them under `$XDG_CONFIG_HOME/Nook/`. The module is also
+available as `homeModules.default`.
