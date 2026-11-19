@@ -1,3 +1,5 @@
 /nook
 .orcrist-agent/
 .DS_Store
+result
+result-*
