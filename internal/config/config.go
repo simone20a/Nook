@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"nook/internal/ini"
+	"github.com/simone20a/Nook/ini"
 )
 
 // Example is the documented configuration file that "nook config init"

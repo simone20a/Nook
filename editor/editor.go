@@ -5,7 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"nook/internal/markdown"
+	"github.com/simone20a/Nook/markdown"
 )
 
 // Editor is the model of the text editor.

@@ -28,6 +28,20 @@ go build -o nook .
 
 With the `Makefile`: `make build`, `make run`, `make test`, `make vet`, `make fmt`.
 
+## Embed the Focus Line editor
+
+Import `github.com/simone20a/Nook/editor` in a Bubble Tea v1 application.
+Create the model with `ed := editor.New(lines, width, height)`. In the parent
+model's update method, call `next, cmd := ed.Update(msg)`, store
+`ed = next.(editor.Editor)` and return the command. Resize with
+`ed = ed.SetSize(width, height)`, render with `ed.View()` and read the
+edited text with `ed.Lines()`.
+
+The default theme is dark. To select a different palette, import
+`github.com/simone20a/Nook/theme`, call `theme.Resolve(name, configDir)`,
+check the error and pass the result to `theme.Use` before starting the
+Bubble Tea program. All editor instances share this palette.
+
 ## Usage
 
 ```sh
@@ -341,7 +355,7 @@ Edit `ocean.toml` and choose it in the configuration with `theme = "ocean"`. A
 theme name is looked up as `~/.config/Nook/themes/<name>.toml`; a value with a
 `/` or ending in `.toml` is a path (`~/` is your home directory, a relative path
 starts in `~/.config/Nook`). `dark` and `light` are reserved for the built-in ones;
-their files live in [`internal/themefile/themes`](internal/themefile/themes).
+their files live in [`themefile/themes`](themefile/themes).
 
 A theme file looks like this (shortened):
 

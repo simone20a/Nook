@@ -5,7 +5,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"nook/internal/editor"
+	"github.com/simone20a/Nook/editor"
 )
 
 // TestHelpKeyToggle checks that f1 opens the help popup without making

@@ -9,7 +9,7 @@ import (
 	ansi "github.com/charmbracelet/x/ansi"
 	"github.com/muesli/termenv"
 
-	"nook/internal/theme"
+	"github.com/simone20a/Nook/theme"
 )
 
 // TestSelectionOnLine checks the computation of the selected range per line,
