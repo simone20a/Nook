@@ -6,7 +6,7 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"nook/internal/store"
+	"github.com/simone20a/Nook/internal/store"
 )
 
 // newFolderTestStore opens the store in a temporary directory of the test.

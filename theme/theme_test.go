@@ -7,8 +7,8 @@ import (
 	lipgloss "github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
 
-	"nook/internal/markdown"
-	"nook/internal/themefile"
+	"github.com/simone20a/Nook/markdown"
+	"github.com/simone20a/Nook/themefile"
 )
 
 // setTrueColorProfile forces an explicit colour profile on the lipgloss renderer: in

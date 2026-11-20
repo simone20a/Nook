@@ -8,7 +8,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	ansi "github.com/charmbracelet/x/ansi"
 
-	"nook/internal/theme"
+	"github.com/simone20a/Nook/theme"
 )
 
 // --- Vim mode ---

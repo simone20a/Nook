@@ -7,11 +7,11 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"nook/internal/app"
-	"nook/internal/config"
-	"nook/internal/store"
-	"nook/internal/theme"
-	"nook/internal/themefile"
+	"github.com/simone20a/Nook/internal/app"
+	"github.com/simone20a/Nook/internal/config"
+	"github.com/simone20a/Nook/internal/store"
+	"github.com/simone20a/Nook/theme"
+	"github.com/simone20a/Nook/themefile"
 )
 
 const usage = `Usage:

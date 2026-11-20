@@ -5,7 +5,7 @@ import (
 
 	ansi "github.com/charmbracelet/x/ansi"
 
-	"nook/internal/theme"
+	"github.com/simone20a/Nook/theme"
 )
 
 // helpRow is one row of a help page: a key and its description, or a

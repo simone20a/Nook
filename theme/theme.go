@@ -12,8 +12,8 @@ package theme
 import (
 	lipgloss "github.com/charmbracelet/lipgloss"
 
-	"nook/internal/markdown"
-	"nook/internal/themefile"
+	"github.com/simone20a/Nook/markdown"
+	"github.com/simone20a/Nook/themefile"
 )
 
 // Styles maps every markdown style to its full rendering.

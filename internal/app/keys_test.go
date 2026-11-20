@@ -6,8 +6,8 @@ import (
 
 	tea "github.com/charmbracelet/bubbletea"
 
-	"nook/internal/editor"
-	"nook/internal/store"
+	"github.com/simone20a/Nook/editor"
+	"github.com/simone20a/Nook/internal/store"
 )
 
 // newKeysTestStore opens the store in a temporary directory of the test, as

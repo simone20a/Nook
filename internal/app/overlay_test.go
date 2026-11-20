@@ -7,7 +7,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
 
-	"nook/internal/theme"
+	"github.com/simone20a/Nook/theme"
 
 	ansi "github.com/charmbracelet/x/ansi"
 )
